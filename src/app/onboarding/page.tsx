@@ -232,22 +232,19 @@ export default function OnboardingPage() {
 
     setUploading(true);
     try {
-      // Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(fileName, file, { contentType: file.type });
+      // Upload via API route (bypasses storage RLS)
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
 
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('photos')
-        .getPublicUrl(fileName);
-
-      const newPhotos = [...photos, urlData.publicUrl];
+      const newPhotos = [...photos, data.url];
       setPhotos(newPhotos);
       
       // Update user's photos array in database

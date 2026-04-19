@@ -64,17 +64,21 @@ export default function EditProfilePage() {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, file, { contentType: file.type });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName);
-      setPhotos(prev => [...prev, urlData.publicUrl]);
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setPhotos(prev => [...prev, data.url]);
       toast.success(isVideo ? 'Video uploaded!' : 'Photo uploaded!');
-    } catch {
-      toast.error('Upload failed');
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed');
     } finally {
-      setUploading(true);
       if (fileRef.current) fileRef.current.value = '';
       setUploading(false);
     }
@@ -133,43 +137,47 @@ export default function EditProfilePage() {
         <div className="bg-white rounded-2xl p-4 border border-slate-200">
           <h3 className="font-semibold text-slate-900 mb-3">Photos</h3>
           <div className="grid grid-cols-3 gap-2">
-            {photos.map((photo, i) => {
-              const isVid = /\.(mp4|mov|webm)(\?|$)/i.test(photo);
+            {Array.from({ length: 6 }).map((_, i) => {
+              const photo = photos[i];
+              if (photo) {
+                const isVid = /\.(mp4|mov|webm)(\?|$)/i.test(photo);
+                return (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
+                    {isVid ? (
+                      <video src={photo} muted loop playsInline autoPlay className="w-full h-full object-cover" />
+                    ) : !imageErrors.has(i) ? (
+                      <Image src={photo} alt="" fill className="object-cover" onError={() => setImageErrors(prev => new Set(prev).add(i))} />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Camera className="w-6 h-6 text-slate-300" />
+                      </div>
+                    )}
+                    <button
+                      onClick={() => removePhoto(i)}
+                      className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center"
+                    >
+                      <X className="w-4 h-4 text-white" />
+                    </button>
+                    {i === 0 && (
+                      <div className="absolute bottom-1 left-1 px-2 py-0.5 bg-rose-500 text-white text-[10px] font-bold rounded-full">
+                        MAIN
+                      </div>
+                    )}
+                  </div>
+                );
+              }
               return (
-              <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
-                {isVid ? (
-                  <video src={photo} muted loop playsInline autoPlay className="w-full h-full object-cover" />
-                ) : !imageErrors.has(i) ? (
-                  <Image src={photo} alt="" fill className="object-cover" onError={() => setImageErrors(prev => new Set(prev).add(i))} />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Camera className="w-6 h-6 text-slate-300" />
-                  </div>
-                )}
                 <button
-                  onClick={() => removePhoto(i)}
-                  className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center"
+                  key={i}
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="aspect-square rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-rose-400 hover:text-rose-400 transition"
                 >
-                  <X className="w-4 h-4 text-white" />
+                  <Plus className="w-6 h-6" />
+                  <span className="text-xs mt-1">{uploading ? '...' : i === 0 ? 'Main' : 'Add'}</span>
                 </button>
-                {i === 0 && (
-                  <div className="absolute bottom-1 left-1 px-2 py-0.5 bg-rose-500 text-white text-[10px] font-bold rounded-full">
-                    MAIN
-                  </div>
-                )}
-              </div>
-            );
+              );
             })}
-            {photos.length < 6 && (
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="aspect-square rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:border-rose-400 hover:text-rose-400 transition"
-              >
-                <Plus className="w-6 h-6" />
-                <span className="text-xs mt-1">{uploading ? '...' : 'Add'}</span>
-              </button>
-            )}
           </div>
           <input ref={fileRef} type="file" accept="image/*,video/mp4,video/quicktime,video/webm" className="hidden" onChange={handlePhotoUpload} />
         </div>
