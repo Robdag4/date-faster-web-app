@@ -1,259 +1,357 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  MapPin, 
-  DollarSign, 
-  Star, 
-  Clock, 
-  Users,
-  Heart,
-  Search,
-  Filter,
-  Calendar
-} from 'lucide-react';
+import { useAuth } from '@/components/providers/auth-provider';
+import { supabase } from '@/lib/supabase';
+import { Calendar, MapPin, Clock, User, ChevronRight, Heart, Plus, Download } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 
-interface DatePackage {
+interface DateRequest {
   id: string;
-  name: string;
-  description: string;
-  price_cents: number;
-  category: string;
-  image_url?: string;
+  match_id: string;
+  sender_id: string;
+  receiver_id: string;
+  package_id: string;
+  status: string;
+  scheduled_date: string | null;
+  scheduled_time: string | null;
+  note: string;
+  created_at: string;
+  redemption_code: string | null;
+  redeemed_at: string | null;
+  // Joined
+  package_name?: string;
+  package_description?: string;
+  package_category?: string;
+  price_cents?: number;
   venue_name?: string;
-  venue_address?: string;
-  distance_miles?: number;
-  active: boolean;
+  other_name?: string;
+  other_photo?: string;
+  payment_status?: string;
 }
 
-interface Match {
-  id: string;
-  user1_id: string;
-  user2_id: string;
-  status: string;
-  // We would get other user info separately
-}
+type Tab = 'upcoming' | 'pending' | 'past';
 
 export default function DatesPage() {
-  const [packages, setPackages] = useState<DatePackage[]>([]);
+  const { user } = useAuth();
+  const [dates, setDates] = useState<DateRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [radiusMiles, setRadiusMiles] = useState(50);
+  const [activeTab, setActiveTab] = useState<Tab>('upcoming');
 
   useEffect(() => {
-    loadDatePackages();
-  }, [radiusMiles]);
+    if (user) loadDates();
+  }, [user]);
 
-  const loadDatePackages = async () => {
+  const loadDates = async () => {
+    if (!user) return;
     try {
-      const response = await fetch(`/api/dates/packages?radius=${radiusMiles}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPackages(data);
-      } else {
-        toast.error('Failed to load date packages');
-      }
-    } catch (error) {
-      console.error('Error loading packages:', error);
-      toast.error('Network error loading packages');
+      // Get all date requests involving this user
+      const { data: requests, error } = await supabase
+        .from('date_requests')
+        .select(`
+          *,
+          date_packages (name, description, category, price_cents, venue_id,
+            venues (name, address)
+          )
+        `)
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('scheduled_date', { ascending: true });
+
+      if (error) throw error;
+
+      // Get other user info for each date
+      const enriched = await Promise.all((requests || []).map(async (req: any) => {
+        const otherId = req.sender_id === user.id ? req.receiver_id : req.sender_id;
+        const { data: otherUser } = await supabase
+          .from('users')
+          .select('first_name, photos')
+          .eq('id', otherId)
+          .single();
+
+        // Check payment status
+        const { data: payment } = await supabase
+          .from('payments')
+          .select('status')
+          .eq('date_request_id', req.id)
+          .eq('status', 'completed')
+          .single();
+
+        return {
+          ...req,
+          package_name: req.date_packages?.name,
+          package_description: req.date_packages?.description,
+          package_category: req.date_packages?.category,
+          price_cents: req.date_packages?.price_cents,
+          venue_name: req.date_packages?.venues?.name,
+          other_name: otherUser?.first_name || 'Someone',
+          other_photo: otherUser?.photos?.[0] || null,
+          payment_status: payment?.status || null,
+        };
+      }));
+
+      setDates(enriched);
+    } catch (err) {
+      console.error('Error loading dates:', err);
+      toast.error('Failed to load dates');
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredPackages = packages.filter(pkg => {
-    const matchesSearch = pkg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         pkg.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (pkg.venue_name && pkg.venue_name.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesCategory = selectedCategory === 'all' || pkg.category === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
 
-  const categories = Array.from(new Set(packages.map(pkg => pkg.category))).filter(Boolean);
+  const upcoming = dates.filter(d => d.status === 'accepted' && (d.scheduled_date || '') >= today);
+  const pending = dates.filter(d => d.status === 'pending');
+  const past = dates.filter(d => d.status === 'accepted' && d.scheduled_date && d.scheduled_date < today);
 
-  const formatPrice = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
+  const currentDates = activeTab === 'upcoming' ? upcoming : activeTab === 'pending' ? pending : past;
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  const formatTime = (timeStr: string) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`;
+  };
+
+  const addToGoogleCalendar = (date: DateRequest) => {
+    if (!date.scheduled_date) return;
+    const time = date.scheduled_time || '19:00';
+    const [year, month, day] = date.scheduled_date.split('-').map(Number);
+    const [hour, minute] = time.split(':').map(Number);
+    const start = new Date(year, month - 1, day, hour, minute);
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const title = `Date with ${date.other_name} — ${date.package_name}`;
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(`Date Faster: ${date.package_name}\nWith: ${date.other_name}`)}`;
+    window.open(url, '_blank');
+  };
+
+  const downloadICS = (date: DateRequest) => {
+    if (!date.scheduled_date) return;
+    const time = date.scheduled_time || '19:00';
+    const [year, month, day] = date.scheduled_date.split('-').map(Number);
+    const [hour, minute] = time.split(':').map(Number);
+    const start = new Date(year, month - 1, day, hour, minute);
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const title = `Date with ${date.other_name} — ${date.package_name}`;
+
+    const ics = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Date Faster//EN', 'BEGIN:VEVENT',
+      `DTSTART:${fmt(start)}`, `DTEND:${fmt(end)}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:Date Faster: ${date.package_name}\\nWith: ${date.other_name}`,
+      `UID:${date.id}@datefaster.com`, 'END:VEVENT', 'END:VCALENDAR',
+    ].join('\r\n');
+
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `date-${date.id.slice(0, 8)}.ics`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const getDaysUntil = (dateStr: string) => {
+    const target = new Date(dateStr + 'T12:00:00');
+    const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 0) return 'Today!';
+    if (diff === 1) return 'Tomorrow';
+    return `In ${diff} days`;
   };
 
   if (loading) {
     return (
-      <div className="max-w-md mx-auto p-4 flex items-center justify-center min-h-96">
+      <div className="min-h-dvh bg-cream-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto p-4 space-y-6">
+    <div className="min-h-dvh bg-cream-50 pb-24">
       {/* Header */}
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">
-          Date Packages
-        </h1>
-        <p className="text-slate-600">
-          Browse curated date experiences for you and your matches
-        </p>
-      </div>
-
-      {/* Search & Filters */}
-      <div className="space-y-3">
-        {/* Search */}
-        <div className="relative">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search dates or venues..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm"
-          />
+      <div className="bg-white border-b border-slate-200 px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold text-slate-900">My Dates</h1>
+          <Link href="/discover" className="w-10 h-10 rounded-full gradient-bg flex items-center justify-center">
+            <Plus className="w-5 h-5 text-white" />
+          </Link>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center space-x-3">
-          <div className="flex-1">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+        {/* Tabs */}
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+          {(['upcoming', 'pending', 'past'] as Tab[]).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition ${
+                activeTab === tab
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500'
+              }`}
             >
-              <option value="all">All Categories</option>
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="flex-1">
-            <select
-              value={radiusMiles}
-              onChange={(e) => setRadiusMiles(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-            >
-              <option value={10}>Within 10 miles</option>
-              <option value={25}>Within 25 miles</option>
-              <option value={50}>Within 50 miles</option>
-              <option value={100}>Within 100 miles</option>
-              <option value={9999}>Anywhere</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Results Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-600">
-          {filteredPackages.length} date{filteredPackages.length !== 1 ? 's' : ''} found
-        </p>
-      </div>
-
-      {/* Packages Grid */}
-      {filteredPackages.length === 0 ? (
-        <div className="text-center py-12">
-          <Calendar className="w-12 h-12 mx-auto mb-4 text-slate-400" />
-          <h3 className="font-medium text-slate-900 mb-2">No dates found</h3>
-          <p className="text-slate-600 text-sm">
-            Try adjusting your search or filters
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredPackages.map((pkg, index) => (
-            <motion.div
-              key={pkg.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
-            >
-              {pkg.image_url && (
-                <div className="aspect-video bg-slate-200 relative">
-                  <img 
-                    src={pkg.image_url} 
-                    alt={pkg.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
-                    <span className="text-sm font-semibold text-slate-900">
-                      {formatPrice(pkg.price_cents)}
-                    </span>
-                  </div>
-                </div>
+              {tab}
+              {tab === 'upcoming' && upcoming.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-rose-500 text-white text-[10px] rounded-full">{upcoming.length}</span>
               )}
-              
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-slate-900 mb-1">
-                      {pkg.name}
-                    </h3>
-                    <span className="inline-block px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
-                      {pkg.category}
-                    </span>
-                  </div>
-                  {!pkg.image_url && (
-                    <div className="text-right">
-                      <p className="font-bold text-slate-900">{formatPrice(pkg.price_cents)}</p>
-                    </div>
-                  )}
-                </div>
+              {tab === 'pending' && pending.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] rounded-full">{pending.length}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
 
-                <p className="text-slate-600 text-sm mb-3">
-                  {pkg.description}
-                </p>
-
-                {(pkg.venue_name || pkg.venue_address) && (
-                  <div className="flex items-start space-x-2 text-sm text-slate-600 mb-3">
-                    <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <div>
-                      {pkg.venue_name && (
-                        <p className="font-medium">{pkg.venue_name}</p>
-                      )}
-                      {pkg.venue_address && (
-                        <p>{pkg.venue_address}</p>
-                      )}
-                      {pkg.distance_miles && (
-                        <p className="text-xs text-slate-500">
-                          {pkg.distance_miles} miles away
-                        </p>
-                      )}
-                    </div>
+      <div className="px-4 pt-4">
+        {currentDates.length === 0 ? (
+          <div className="text-center py-16">
+            <Calendar className="w-16 h-16 mx-auto mb-4 text-slate-300" />
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+              {activeTab === 'upcoming' ? 'No upcoming dates' : activeTab === 'pending' ? 'No pending requests' : 'No past dates'}
+            </h3>
+            <p className="text-slate-500 text-sm mb-6">
+              {activeTab === 'upcoming'
+                ? 'Match with someone and propose a date!'
+                : activeTab === 'pending'
+                ? 'Date requests you send or receive show up here'
+                : 'Your date history will appear here'}
+            </p>
+            {activeTab === 'upcoming' && (
+              <Link href="/discover" className="inline-flex items-center px-6 py-3 rounded-xl text-white font-semibold gradient-bg">
+                <Heart className="w-4 h-4 mr-2" /> Find Matches
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {currentDates.map(date => (
+              <div key={date.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                {/* Date header with countdown */}
+                {date.scheduled_date && activeTab === 'upcoming' && (
+                  <div className="gradient-bg px-4 py-2 flex items-center justify-between">
+                    <span className="text-white text-sm font-semibold">{getDaysUntil(date.scheduled_date)}</span>
+                    <span className="text-white/80 text-xs">{formatDate(date.scheduled_date)}</span>
                   </div>
                 )}
 
-                <button
-                  className="btn-primary w-full"
-                  onClick={() => {
-                    // This would normally open a modal or navigate to a page where
-                    // the user can select a match to propose this date to
-                    toast('Select a match to propose this date to (coming soon)', { icon: 'ℹ️' });
-                  }}
-                >
-                  <Heart className="w-4 h-4 mr-2" />
-                  Propose This Date
-                </button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+                <div className="p-4">
+                  {/* Person + Package */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
+                      {date.other_photo ? (
+                        <Image src={date.other_photo} alt="" width={48} height={48} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <User className="w-6 h-6 text-slate-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-900 truncate">
+                        Date with {date.other_name}
+                      </h3>
+                      <p className="text-sm text-slate-500 truncate">{date.package_name}</p>
+                    </div>
+                    {date.status === 'pending' && (
+                      <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
+                        {date.sender_id === user?.id ? 'Sent' : 'Received'}
+                      </span>
+                    )}
+                  </div>
 
-      {/* Info Card */}
-      <div className="bg-blue-50 rounded-xl p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">How Date Packages Work</h3>
-        <div className="space-y-2 text-sm text-blue-800">
-          <p>• Browse curated date experiences near you</p>
-          <p>• Propose a date to one of your matches</p>
-          <p>• Once accepted, payment unlocks chat</p>
-          <p>• Get a redemption code to use at the venue</p>
-        </div>
+                  {/* Details */}
+                  <div className="space-y-2 mb-3">
+                    {date.scheduled_date && (
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Calendar className="w-4 h-4 text-slate-400" />
+                        <span>{formatDate(date.scheduled_date)}</span>
+                        {date.scheduled_time && (
+                          <span>at {formatTime(date.scheduled_time)}</span>
+                        )}
+                      </div>
+                    )}
+                    {date.venue_name && (
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <MapPin className="w-4 h-4 text-slate-400" />
+                        <span>{date.venue_name}</span>
+                      </div>
+                    )}
+                    {date.price_cents && (
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <span className="w-4 h-4 text-slate-400 text-center font-bold">$</span>
+                        <span>${(date.price_cents / 100).toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  {activeTab === 'upcoming' && date.scheduled_date && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => addToGoogleCalendar(date)}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1"
+                      >
+                        <Calendar className="w-4 h-4" /> Google Cal
+                      </button>
+                      <button
+                        onClick={() => downloadICS(date)}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1"
+                      >
+                        <Download className="w-4 h-4" /> Export .ics
+                      </button>
+                      {date.redemption_code && (
+                        <Link
+                          href={`/redeem/${date.redemption_code}`}
+                          className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white gradient-bg flex items-center justify-center gap-1"
+                        >
+                          QR Code
+                        </Link>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'pending' && date.receiver_id === user?.id && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          await supabase.from('date_requests').update({ status: 'accepted' }).eq('id', date.id);
+                          toast.success('Date accepted! 🎉');
+                          loadDates();
+                        }}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white gradient-bg"
+                      >
+                        Accept ❤️
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await supabase.from('date_requests').update({ status: 'declined' }).eq('id', date.id);
+                          toast('Date declined');
+                          loadDates();
+                        }}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 text-slate-600"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  )}
+
+                  {activeTab === 'pending' && date.sender_id === user?.id && (
+                    <p className="text-xs text-slate-400 text-center">Waiting for {date.other_name} to respond...</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

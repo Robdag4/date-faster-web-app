@@ -13,7 +13,7 @@ const navItems = [
   },
   {
     href: '/dates',
-    icon: Package,
+    icon: Calendar,
     label: 'Dates',
   },
   {
