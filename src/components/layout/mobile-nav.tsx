@@ -14,7 +14,7 @@ const navItems = [
   {
     href: '/dates',
     icon: Calendar,
-    label: 'Dates',
+    label: 'My Dates',
   },
   {
     href: '/matches',

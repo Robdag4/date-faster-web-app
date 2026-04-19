@@ -19,6 +19,7 @@ export default function DiscoverPage() {
   const [matchModal, setMatchModal] = useState<{
     show: boolean;
     profile?: DiscoveryProfile;
+    matchId?: string;
   }>({ show: false });
   
   // Load discovery feed
@@ -48,8 +49,7 @@ export default function DiscoverPage() {
       const result = await api.discovery.swipe(currentProfile.id, direction);
       
       if (result.matched) {
-        // Show match modal
-        setMatchModal({ show: true, profile: currentProfile });
+        setMatchModal({ show: true, profile: currentProfile, matchId: result.matchId });
       }
       
       // Move to next profile
@@ -144,10 +144,10 @@ export default function DiscoverPage() {
       <MatchModal
         isOpen={matchModal.show}
         profile={matchModal.profile}
+        matchId={matchModal.matchId}
         onClose={() => setMatchModal({ show: false })}
         onSendMessage={() => {
           setMatchModal({ show: false });
-          // Navigate to matches or chat
         }}
       />
     </div>
