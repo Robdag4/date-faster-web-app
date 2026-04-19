@@ -233,7 +233,7 @@ export default function DatesPage() {
                   onClick={() => {
                     // This would normally open a modal or navigate to a page where
                     // the user can select a match to propose this date to
-                    toast.info('Select a match to propose this date to (coming soon)');
+                    toast('Select a match to propose this date to (coming soon)', { icon: 'ℹ️' });
                   }}
                 >
                   <Heart className="w-4 h-4 mr-2" />
