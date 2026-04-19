@@ -134,14 +134,14 @@ export default function DiscoverPage() {
             <p className="text-sm font-semibold text-blue-900">📍 Enable location</p>
             <p className="text-xs text-blue-700">Find matches near you</p>
           </div>
-          <button onClick={handleLocationPermission} className="px-4 py-2 rounded-xl text-sm font-semibold text-white gradient-bg">
+          <button onClick={handleLocationPermission} className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600 shadow-sm">
             Allow
           </button>
         </div>
       )}
 
       {/* Discovery Stack */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative overflow-hidden" style={{ minHeight: '400px' }}>
         {!hasMoreProfiles ? (
           <EmptyState onRefresh={loadDiscoveryFeed} />
         ) : (

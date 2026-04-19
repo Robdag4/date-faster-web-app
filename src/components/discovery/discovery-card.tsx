@@ -160,7 +160,7 @@ export const DiscoveryCard: React.FC<DiscoveryCardProps> = ({
 
           <div className="flex items-center text-slate-600 mb-3">
             <MapPin className="w-4 h-4 mr-2" />
-            <span className="text-sm">{profile.distance} miles away</span>
+            <span className="text-sm">{profile.distance != null ? `${profile.distance} miles away` : 'Distance unknown'}</span>
           </div>
 
           {showDetails ? (
