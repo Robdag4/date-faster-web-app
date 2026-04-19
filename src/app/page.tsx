@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/components/providers/auth-provider';
 import { AuthFlow } from '@/components/auth/auth-flow';
-import { AppShell } from '@/components/layout/app-shell';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
