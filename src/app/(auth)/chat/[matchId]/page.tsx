@@ -95,7 +95,7 @@ export default function ChatPage() {
 
       // Check if chat should be unlocked: accepted date_request with completed payment, or mixer match
       let effectiveStatus = matchData.status;
-      if (matchData.source !== 'mixer') {
+      if (matchData.source !== 'mixer' && matchData.source !== 'speed_dating') {
         const { data: paidDate } = await supabase
           .from('date_requests')
           .select('id, status, payments!inner(status)')
@@ -230,7 +230,7 @@ export default function ChatPage() {
     );
   }
 
-  const chatLocked = match.status !== 'paid' && match.status !== 'completed' && match.source !== 'mixer';
+  const chatLocked = match.status !== 'paid' && match.status !== 'completed' && match.source !== 'mixer' && match.source !== 'speed_dating';
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
@@ -262,11 +262,11 @@ export default function ChatPage() {
             {match.otherUser.first_name}
           </h2>
           <p className="text-sm text-slate-600">
-            Age {match.otherUser.age} • {match.source === 'mixer' ? 'Mixer Match' : 'Dating Match'}
+            Age {match.otherUser.age} • {match.source === 'mixer' || match.source === 'speed_dating' ? 'Mixer Match' : 'Dating Match'}
           </p>
         </div>
         
-        {match.source !== 'mixer' && (
+        {match.source !== 'mixer' && match.source !== 'speed_dating' && (
           <button className="p-2 rounded-full hover:bg-slate-100">
             <Gift className="w-5 h-5 text-slate-600" />
           </button>

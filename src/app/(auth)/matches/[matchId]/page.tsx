@@ -239,7 +239,26 @@ export default function MatchDetailPage() {
           </div>
         </div>
 
-        {/* Date Proposal Status */}
+        {/* Event matches: chat unlocked immediately */}
+        {(match.source === 'speed_dating' || match.source === 'mixer') && (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 text-center">
+            <MessageCircle className="w-10 h-10 mx-auto mb-3 text-rose-400" />
+            <h3 className="font-semibold text-slate-900 mb-1">Chat Unlocked! 🎉</h3>
+            <p className="text-sm text-slate-500 mb-4">
+              You met at {match.source === 'speed_dating' ? 'Speed Dating' : 'a Mixer'} — start chatting!
+            </p>
+            <Link
+              href={`/chat/${matchId}`}
+              className="inline-flex items-center gap-2 px-6 py-3 gradient-bg text-white rounded-xl font-semibold"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Chat Now
+            </Link>
+          </div>
+        )}
+
+        {/* Swipe matches: date proposal flow */}
+        {match.source !== 'speed_dating' && match.source !== 'mixer' && (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
           <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-rose-500" />
@@ -391,6 +410,7 @@ export default function MatchDetailPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

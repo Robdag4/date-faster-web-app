@@ -36,7 +36,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
     // Check if chat is allowed
     const chatAllowed = match.status === 'paid' || 
                        match.status === 'completed' || 
-                       match.source === 'mixer';
+                       match.source === 'mixer' ||
+                       match.source === 'speed_dating';
                        
     if (!chatAllowed) {
       return NextResponse.json({ 

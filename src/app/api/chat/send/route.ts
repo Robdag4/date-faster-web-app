@@ -32,10 +32,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Match not found' }, { status: 404 });
     }
 
-    // Check if chat is allowed (paid matches or mixer matches)
+    // Check if chat is allowed (paid matches or event matches)
     const chatAllowed = match.status === 'paid' || 
                        match.status === 'completed' || 
-                       match.source === 'mixer';
+                       match.source === 'mixer' ||
+                       match.source === 'speed_dating';
                        
     if (!chatAllowed) {
       return NextResponse.json({ 

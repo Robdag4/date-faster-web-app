@@ -73,7 +73,10 @@ export default function MatchesPage() {
           const photo = match.other_photos?.[0];
           const isVideo = photo && (photo.endsWith('.mp4') || photo.endsWith('.mov') || photo.endsWith('.webm'));
 
-          const actionIcon = match.status === 'paid' || match.status === 'completed'
+          const isEventMatch = match.source === 'speed_dating' || match.source === 'mixer';
+          const chatUnlocked = isEventMatch || match.status === 'paid' || match.status === 'completed';
+
+          const actionIcon = chatUnlocked
             ? <MessageCircle className="w-5 h-5 text-rose-500" />
             : match.status === 'date_accepted'
             ? <CreditCard className="w-5 h-5 text-purple-500" />
@@ -81,7 +84,7 @@ export default function MatchesPage() {
             ? <Clock className="w-5 h-5 text-amber-500" />
             : <Calendar className="w-5 h-5 text-rose-500" />;
 
-          const linkHref = (match.status === 'paid' || match.status === 'completed')
+          const linkHref = chatUnlocked
             ? `/chat/${match.id}`
             : `/matches/${match.id}`;
 
