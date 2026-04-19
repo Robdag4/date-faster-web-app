@@ -188,10 +188,76 @@ export const auth = {
 export const discovery = {
   // Get discovery feed
   feed: async (distance?: number): Promise<DiscoveryProfile[]> => {
-    // This will need to be implemented as a Supabase edge function
-    // For now, return empty array
-    console.warn('Discovery feed not yet implemented');
-    return [];
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return [];
+
+    // Get current user's profile + preferences
+    const { data: me } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
+    if (!me) return [];
+
+    // Get users already swiped on
+    const { data: swipes } = await supabase
+      .from('swipes')
+      .select('target_id')
+      .eq('user_id', authUser.id);
+    const swipedIds = (swipes || []).map((s: any) => s.target_id);
+    swipedIds.push(authUser.id); // exclude self
+
+    // Build query for potential matches
+    let query = supabase
+      .from('users')
+      .select('id, first_name, age, gender, bio, job_title, tagline, interests, ideal_date, relationship_goal, photos, is_premium, latitude, longitude')
+      .eq('onboarding_complete', true)
+      .is('deleted_at', null)
+      .eq('locked', false)
+      .not('id', 'in', `(${swipedIds.map(id => `"${id}"`).join(',')})`)
+      .gte('age', me.age_min || 18)
+      .lte('age', me.age_max || 99);
+
+    // Gender preference filtering
+    if (me.preference === 'women') {
+      query = query.eq('gender', 'female');
+    } else if (me.preference === 'men') {
+      query = query.eq('gender', 'male');
+    }
+    // 'both' = no gender filter
+
+    // Skip incognito users (unless premium with incognito_plus)
+    if (!me.incognito_plus) {
+      query = query.eq('incognito', false);
+    }
+
+    const { data: profiles, error } = await query.limit(50);
+    if (error || !profiles) return [];
+
+    // Calculate distance and filter
+    const maxDist = distance || me.discovery_radius || 25;
+    const myLat = me.custom_latitude || me.latitude || 40.7128;
+    const myLng = me.custom_longitude || me.longitude || -74.006;
+
+    const withDistance = profiles.map((p: any) => {
+      const pLat = p.latitude || 40.7128;
+      const pLng = p.longitude || -74.006;
+      const R = 3959; // miles
+      const dLat = (pLat - myLat) * Math.PI / 180;
+      const dLon = (pLng - myLng) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(myLat * Math.PI / 180) * Math.cos(pLat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+      const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return { ...p, distance: Math.round(dist) };
+    }).filter((p: any) => p.distance <= maxDist);
+
+    // Premium users first, then randomize
+    withDistance.sort((a: any, b: any) => {
+      if (a.is_premium && !b.is_premium) return -1;
+      if (!a.is_premium && b.is_premium) return 1;
+      return Math.random() - 0.5;
+    });
+
+    return withDistance;
   },
 
   // Swipe on a user
