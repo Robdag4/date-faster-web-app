@@ -82,15 +82,15 @@ export default function ProfilePage() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="text-center">
+          <Link href="/premium" className="text-center block">
             <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-2">
               <Heart className="w-6 h-6 text-rose-500" />
             </div>
             <p className="text-sm font-medium text-slate-900">Premium</p>
             <p className="text-xs text-slate-600">
-              {user.is_premium ? 'Active' : 'Free'}
+              {user.is_premium ? '⭐ Active' : 'Upgrade →'}
             </p>
-          </div>
+          </Link>
           
           <div className="text-center">
             <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
