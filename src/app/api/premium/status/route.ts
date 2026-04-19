@@ -1,25 +1,16 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, createAdminClient } from '@/lib/supabase';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const supabase = createServerComponentClient({ cookies });
+    const supabase = createClient();
+    const token = req.headers.get('authorization')?.replace('Bearer ', '');
+    if (token) await supabase.auth.setSession({ access_token: token, refresh_token: '' });
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { data: user } = await supabaseAdmin
-      .from('users')
-      .select('is_premium, stripe_subscription_id, premium_cancel_at')
-      .eq('id', authUser.id)
-      .single();
-
+    const admin = createAdminClient();
+    const { data: user } = await admin.from('users').select('is_premium, stripe_subscription_id, premium_cancel_at').eq('id', authUser.id).single();
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
     return NextResponse.json({
@@ -27,7 +18,7 @@ export async function GET() {
       subscriptionId: user.stripe_subscription_id || null,
       cancelAt: user.premium_cancel_at || null,
     });
-  } catch (err: any) {
+  } catch {
     return NextResponse.json({ error: 'Failed to get status' }, { status: 500 });
   }
 }
