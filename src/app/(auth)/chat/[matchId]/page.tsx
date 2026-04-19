@@ -233,9 +233,9 @@ export default function ChatPage() {
   const chatLocked = match.status !== 'paid' && match.status !== 'completed' && match.source !== 'mixer' && match.source !== 'speed_dating';
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen flex flex-col">
+    <div className="max-w-md mx-auto bg-white h-full flex flex-col" style={{ height: 'calc(100dvh - 120px)' }}>
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 p-4 flex items-center space-x-3">
+      <div className="bg-white border-b border-slate-200 p-4 flex items-center space-x-3 shrink-0">
         <button 
           onClick={() => router.back()}
           className="p-2 -ml-2 rounded-full hover:bg-slate-100"
@@ -305,7 +305,7 @@ export default function ChatPage() {
       {/* Messages */}
       {!chatLocked && (
         <>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
             {messages.length === 0 && (
               <div className="text-center py-8">
                 <Heart className="w-12 h-12 mx-auto mb-3 text-rose-300" />
@@ -347,7 +347,7 @@ export default function ChatPage() {
           </div>
 
           {/* Message Input */}
-          <div className="border-t border-slate-200 p-4">
+          <div className="border-t border-slate-200 p-4 shrink-0">
             <div className="flex items-center space-x-3">
               <div className="flex-1 relative">
                 <textarea
