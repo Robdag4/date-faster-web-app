@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, MessageCircle, Calendar, Compass, User } from 'lucide-react';
+import { Heart, Calendar, Compass, User, PartyPopper, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const navItems = [
@@ -12,13 +12,18 @@ const navItems = [
     label: 'Discover',
   },
   {
+    href: '/dates',
+    icon: Package,
+    label: 'Dates',
+  },
+  {
     href: '/matches',
     icon: Heart,
     label: 'Matches',
   },
   {
     href: '/events',
-    icon: Calendar,
+    icon: PartyPopper,
     label: 'Events',
   },
   {
