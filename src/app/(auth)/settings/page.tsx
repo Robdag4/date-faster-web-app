@@ -139,6 +139,24 @@ export default function SettingsPage() {
           </button>
         </div>
 
+        {/* Premium */}
+        <Link href="/premium" className="block bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-4 border border-amber-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-slate-900 flex items-center space-x-2">
+                <span>⭐</span>
+                <span>{user?.is_premium ? 'Premium Active' : 'Upgrade to Premium'}</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {user?.is_premium
+                  ? 'Manage your subscription'
+                  : 'Unlimited likes, see who likes you, priority discovery & more'}
+              </p>
+            </div>
+            <span className="text-slate-400">→</span>
+          </div>
+        </Link>
+
         {/* Save */}
         <button
           onClick={handleSave}
