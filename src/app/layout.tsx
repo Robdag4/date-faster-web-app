@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: 'The premium dating app that connects you with local singles through real experiences. Speed dating events, singles mixers, and curated date packages.',
   keywords: 'dating app, speed dating, singles mixer, date packages, local dating, premium dating',
   authors: [{ name: 'Date Faster' }],
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, interactive-widget=resizes-content',
   robots: 'index, follow',
   openGraph: {
     title: 'Date Faster - Find Your Perfect Date',

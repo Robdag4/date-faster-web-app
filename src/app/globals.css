@@ -52,6 +52,11 @@
   }
 }
 
+/* Safe area for mobile keyboards */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

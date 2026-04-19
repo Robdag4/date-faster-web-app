@@ -340,12 +340,12 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-cream-50">
-      <div className="px-4 py-3 text-center bg-white border-b border-slate-200">
+    <div className="fixed inset-0 flex flex-col bg-cream-50" style={{ height: '100dvh' }}>
+      <div className="px-4 py-3 text-center bg-white border-b border-slate-200 shrink-0">
         <h2 className="font-bold text-lg text-slate-900">🤖 Date Faster Setup</h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 min-h-0">
         {messages.map(m => (
           <div key={m.id} className={`flex mb-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
@@ -477,7 +477,7 @@ export default function OnboardingPage() {
 
       {/* Text input */}
       {!['location', 'done', 'photos', 'interests', 'relationship_goal', 'gender', 'sexuality'].includes(step) && (
-        <div className="flex items-end gap-2 px-4 py-3 bg-white border-t border-slate-200">
+        <div className="flex items-end gap-2 px-4 py-3 bg-white border-t border-slate-200 shrink-0 pb-safe">
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
