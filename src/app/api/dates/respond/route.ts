@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const { requestId, action, counterPackageId, scheduled_date, scheduled_time } = await request.json();
+    const { requestId, action, counterPackageId, scheduled_date, scheduled_time, note } = await request.json();
 
     if (!requestId || !action) {
       return NextResponse.json({ 
@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
 
       if (scheduled_date) updates.scheduled_date = scheduled_date;
       if (scheduled_time) updates.scheduled_time = scheduled_time;
+      if (note !== undefined) updates.note = note;
 
       const { error: updateError } = await supabase
         .from('date_requests')

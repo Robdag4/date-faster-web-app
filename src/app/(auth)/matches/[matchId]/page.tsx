@@ -36,6 +36,8 @@ interface DateReq {
   counter_package_id: string | null;
   status: string;
   note: string;
+  scheduled_date: string | null;
+  scheduled_time: string | null;
   created_at: string;
   package?: { id: string; name: string; description: string; price_cents: number; category: string; image_url: string };
   counterPackage?: { id: string; name: string; description: string; price_cents: number; category: string; image_url: string };
@@ -285,6 +287,20 @@ export default function MatchDetailPage() {
                   <span className="inline-block mt-2 px-2 py-0.5 bg-rose-50 text-rose-600 rounded text-xs">
                     {activePackage.category}
                   </span>
+                )}
+                {(dateRequest.scheduled_date || dateRequest.scheduled_time) && (
+                  <div className="mt-3 pt-3 border-t border-slate-200 flex items-center gap-3 text-sm text-slate-700">
+                    {dateRequest.scheduled_date && (
+                      <span className="flex items-center gap-1">
+                        📅 {new Date(dateRequest.scheduled_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                    {dateRequest.scheduled_time && (
+                      <span className="flex items-center gap-1">
+                        🕐 {(() => { const [h,m] = dateRequest.scheduled_time.split(':'); const hr = parseInt(h); return `${hr % 12 || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`; })()}
+                      </span>
+                    )}
+                  </div>
                 )}
                 {dateRequest.note && (
                   <p className="text-sm text-slate-500 mt-2 italic">"{dateRequest.note}"</p>
