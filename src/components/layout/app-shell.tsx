@@ -34,6 +34,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       <main className="flex-1 overflow-y-auto min-h-0">
         <motion.div
           key={pathname}
+          className="h-full"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
