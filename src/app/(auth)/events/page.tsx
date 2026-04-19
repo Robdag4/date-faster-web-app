@@ -1,36 +1,38 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, Users, Star } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Star, ArrowRight, Zap, Target } from 'lucide-react';
+import Link from 'next/link';
 
 export default function EventsPage() {
-  // Placeholder events data
-  const events = [
+  const eventTypes = [
     {
-      id: '1',
-      type: 'speed_dating',
-      name: 'Speed Dating Night',
-      date: '2024-02-20',
-      time: '19:00',
-      venue: 'The Rooftop Lounge',
-      address: '123 Main St, Downtown',
-      attendees: 24,
-      capacity: 30,
-      price: 35,
-      description: 'Meet 10+ singles in a fun, relaxed atmosphere'
+      id: 'speed-dating',
+      name: 'Speed Dating',
+      description: 'Meet 10+ singles in timed rounds',
+      icon: Zap,
+      color: 'rose',
+      features: [
+        'Timed conversation rounds',
+        'Meet everyone at the event', 
+        'Vote on who you like',
+        'Get matches after the event'
+      ],
+      href: '/events/speed-dating'
     },
     {
-      id: '2',
-      type: 'mixer',
-      name: 'Singles Mixer: Two Truths & A Lie',
-      date: '2024-02-22',
-      time: '20:00',
-      venue: 'Wine & Dine Bar',
-      address: '456 Oak Ave, Midtown',
-      attendees: 18,
-      capacity: 25,
-      price: 25,
-      description: 'Interactive game night to break the ice'
+      id: 'mixer',
+      name: 'Singles Mixer',
+      description: 'Interactive games & icebreakers',
+      icon: Target,
+      color: 'blue',
+      features: [
+        'Two Truths and a Lie game',
+        'Guess other people\'s lies',
+        'Star people you like',
+        'Instant matching'
+      ],
+      href: '/events/mixer'
     }
   ];
 
@@ -46,125 +48,115 @@ export default function EventsPage() {
         </p>
       </div>
 
-      {/* Coming Soon Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-rose-500 to-pink-500 rounded-2xl p-6 text-center text-white"
-      >
-        <Star className="w-12 h-12 mx-auto mb-4" />
-        <h2 className="text-xl font-bold mb-2">Coming Soon!</h2>
-        <p className="text-rose-100">
-          Speed dating events and singles mixers are launching soon in your city
-        </p>
-      </motion.div>
-
-      {/* Preview Events */}
+      {/* Event Types */}
       <div className="space-y-4">
-        <h3 className="font-semibold text-slate-900">Preview: Upcoming Events</h3>
-        
-        {events.map((event, index) => (
-          <motion.div
-            key={event.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-2xl p-4 border border-slate-200 opacity-60"
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div className="flex-1">
-                <h4 className="font-semibold text-slate-900">{event.name}</h4>
-                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                  event.type === 'speed_dating' 
-                    ? 'bg-rose-100 text-rose-700' 
-                    : 'bg-blue-100 text-blue-700'
-                }`}>
-                  {event.type === 'speed_dating' ? 'Speed Dating' : 'Singles Mixer'}
-                </span>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-slate-900">${event.price}</p>
-                <p className="text-xs text-slate-500">per person</p>
-              </div>
-            </div>
-
-            <p className="text-sm text-slate-600 mb-3">{event.description}</p>
-
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 text-sm text-slate-600">
-                <Calendar className="w-4 h-4" />
-                <span>{new Date(event.date).toLocaleDateString()}</span>
-                <Clock className="w-4 h-4 ml-2" />
-                <span>{event.time}</span>
-              </div>
-              
-              <div className="flex items-center space-x-2 text-sm text-slate-600">
-                <MapPin className="w-4 h-4" />
-                <span>{event.venue}, {event.address}</span>
-              </div>
-              
-              <div className="flex items-center space-x-2 text-sm text-slate-600">
-                <Users className="w-4 h-4" />
-                <span>{event.attendees}/{event.capacity} attending</span>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <button
-                disabled
-                className="w-full bg-slate-200 text-slate-500 py-2 px-4 rounded-lg font-medium cursor-not-allowed"
-              >
-                Available Soon
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Waitlist */}
-      <div className="bg-blue-50 rounded-xl p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">🎉 Join the Waitlist</h3>
-        <p className="text-sm text-blue-800 mb-3">
-          Be the first to know when events launch in your city!
-        </p>
-        <button className="btn-primary w-full">
-          Join Waitlist
-        </button>
+        {eventTypes.map((eventType, index) => {
+          const IconComponent = eventType.icon;
+          return (
+            <motion.div
+              key={eventType.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Link href={eventType.href} className="block">
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-slate-300 transition-colors">
+                  <div className="flex items-start space-x-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      eventType.color === 'rose' 
+                        ? 'bg-rose-100' 
+                        : 'bg-blue-100'
+                    }`}>
+                      <IconComponent className={`w-6 h-6 ${
+                        eventType.color === 'rose' 
+                          ? 'text-rose-500' 
+                          : 'text-blue-500'
+                      }`} />
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-slate-900">
+                          {eventType.name}
+                        </h3>
+                        <ArrowRight className="w-5 h-5 text-slate-400" />
+                      </div>
+                      
+                      <p className="text-slate-600 text-sm mb-3">
+                        {eventType.description}
+                      </p>
+                      
+                      <div className="space-y-1">
+                        {eventType.features.map((feature, featureIndex) => (
+                          <div key={featureIndex} className="flex items-center space-x-2">
+                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                            <span className="text-sm text-slate-600">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* How it Works */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200">
-        <h3 className="font-semibold text-slate-900 mb-3">How Events Work</h3>
-        <div className="space-y-3">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200">
+        <h3 className="font-semibold text-slate-900 mb-4">How Events Work</h3>
+        <div className="space-y-4">
           <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-7 h-7 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
               <span className="text-rose-500 font-bold text-sm">1</span>
             </div>
             <div>
-              <h4 className="font-medium text-slate-900">Book your spot</h4>
-              <p className="text-sm text-slate-600">Reserve your place at upcoming events</p>
+              <h4 className="font-medium text-slate-900 mb-1">Get invited</h4>
+              <p className="text-sm text-slate-600">Receive an event code from friends or hosts</p>
             </div>
           </div>
           
           <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-7 h-7 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
               <span className="text-rose-500 font-bold text-sm">2</span>
             </div>
             <div>
-              <h4 className="font-medium text-slate-900">Meet in person</h4>
-              <p className="text-sm text-slate-600">Attend the event and meet other singles</p>
+              <h4 className="font-medium text-slate-900 mb-1">Join the event</h4>
+              <p className="text-sm text-slate-600">Check in with your code and complete your profile</p>
             </div>
           </div>
           
           <div className="flex items-start space-x-3">
-            <div className="w-6 h-6 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-7 h-7 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
               <span className="text-rose-500 font-bold text-sm">3</span>
             </div>
             <div>
-              <h4 className="font-medium text-slate-900">Make connections</h4>
-              <p className="text-sm text-slate-600">Matches appear in your app automatically</p>
+              <h4 className="font-medium text-slate-900 mb-1">Meet & connect</h4>
+              <p className="text-sm text-slate-600">Participate in the event and connect with people you like</p>
             </div>
           </div>
+          
+          <div className="flex items-start space-x-3">
+            <div className="w-7 h-7 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-rose-500 font-bold text-sm">4</span>
+            </div>
+            <div>
+              <h4 className="font-medium text-slate-900 mb-1">Get matches</h4>
+              <p className="text-sm text-slate-600">Mutual connections appear in your matches automatically</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tips */}
+      <div className="bg-blue-50 rounded-xl p-4">
+        <h3 className="font-semibold text-blue-900 mb-2">💡 Pro Tips</h3>
+        <div className="space-y-2 text-sm text-blue-800">
+          <p>• Complete your profile before the event starts</p>
+          <p>• Be authentic and have fun with the activities</p>
+          <p>• Don't overthink it — trust your first impressions</p>
+          <p>• Follow up with matches after the event</p>
         </div>
       </div>
     </div>
