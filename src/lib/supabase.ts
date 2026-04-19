@@ -21,18 +21,22 @@ export const createClient = () => {
   });
 };
 
-// Service role client (for admin operations) - only works server-side
+// Service role client (for admin operations) - only works server-side at runtime
 export const createAdminClient = () => {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
   if (!serviceKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY not set');
+    console.warn('SUPABASE_SERVICE_ROLE_KEY not set — admin client will not work');
   }
-  return createSupabaseClient(supabaseUrl, serviceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  return createSupabaseClient(
+    supabaseUrl || 'https://placeholder.supabase.co',
+    serviceKey || 'placeholder-key',
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
 };
 
 // Re-export type
