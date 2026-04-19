@@ -69,17 +69,59 @@ export default function ChatPage() {
 
   const loadMatchAndMessages = async () => {
     try {
-      // This would normally load match details from our matches API
-      // For now, we'll simulate it
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setCurrentUserId(user.id);
+
+      // Load match from Supabase
+      const { data: matchData, error: matchErr } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('id', matchId)
+        .single();
+
+      if (matchErr || !matchData) {
+        setMatch(null);
+        setLoading(false);
+        return;
+      }
+
+      const otherId = matchData.user1_id === user.id ? matchData.user2_id : matchData.user1_id;
+      const { data: otherData } = await supabase
+        .from('users')
+        .select('id, first_name, age, photos')
+        .eq('id', otherId)
+        .single();
+
+      // Check if chat should be unlocked: accepted date_request with completed payment, or mixer match
+      let effectiveStatus = matchData.status;
+      if (matchData.source !== 'mixer') {
+        const { data: paidDate } = await supabase
+          .from('date_requests')
+          .select('id, status, payments!inner(status)')
+          .eq('match_id', matchId)
+          .eq('status', 'accepted')
+          .limit(1);
+
+        const hasPaidDate = paidDate && paidDate.length > 0 &&
+          (paidDate[0] as any).payments?.some((p: any) => p.status === 'completed');
+
+        if (!hasPaidDate && effectiveStatus !== 'paid' && effectiveStatus !== 'completed') {
+          effectiveStatus = matchData.status; // keep as-is (locked)
+        } else if (hasPaidDate) {
+          effectiveStatus = 'paid';
+        }
+      }
+
       setMatch({
         id: matchId,
-        status: 'paid', // Assume chat is unlocked
-        source: 'swipe',
+        status: effectiveStatus,
+        source: matchData.source || 'swipe',
         otherUser: {
-          id: 'other-user',
-          first_name: 'Alex',
-          age: 28,
-          photos: []
+          id: otherData?.id || otherId,
+          first_name: otherData?.first_name || 'Match',
+          age: otherData?.age || 0,
+          photos: otherData?.photos || []
         }
       });
 
@@ -89,10 +131,7 @@ export default function ChatPage() {
         const data = await response.json();
         setMessages(data);
       } else if (response.status === 403) {
-        // Chat is locked
         setMatch(prev => prev ? { ...prev, status: 'matched' } : null);
-      } else {
-        toast.error('Failed to load messages');
       }
     } catch (error) {
       console.error('Error loading chat:', error);

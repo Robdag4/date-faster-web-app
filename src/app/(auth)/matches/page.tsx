@@ -7,7 +7,7 @@ import { Match } from '@/types';
 import { EmptyMatches } from '@/components/matches/empty-matches';
 import Image from 'next/image';
 import Link from 'next/link';
-import { MessageCircle, Heart, ChevronRight, User } from 'lucide-react';
+import { MessageCircle, Heart, ChevronRight, User, Calendar, CreditCard, Clock, Check } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -73,10 +73,22 @@ export default function MatchesPage() {
           const photo = match.other_photos?.[0];
           const isVideo = photo && (photo.endsWith('.mp4') || photo.endsWith('.mov') || photo.endsWith('.webm'));
 
+          const actionIcon = match.status === 'paid' || match.status === 'completed'
+            ? <MessageCircle className="w-5 h-5 text-rose-500" />
+            : match.status === 'date_accepted'
+            ? <CreditCard className="w-5 h-5 text-purple-500" />
+            : match.status === 'date_pending'
+            ? <Clock className="w-5 h-5 text-amber-500" />
+            : <Calendar className="w-5 h-5 text-rose-500" />;
+
+          const linkHref = (match.status === 'paid' || match.status === 'completed')
+            ? `/chat/${match.id}`
+            : `/matches/${match.id}`;
+
           return (
             <Link
               key={match.id}
-              href={`/chat/${match.id}`}
+              href={linkHref}
               className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-slate-50 active:bg-slate-100 transition-colors"
             >
               {/* Avatar */}
@@ -125,7 +137,7 @@ export default function MatchesPage() {
               {/* Action */}
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5 text-rose-500" />
+                  {actionIcon}
                 </div>
               </div>
             </Link>
