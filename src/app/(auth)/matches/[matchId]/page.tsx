@@ -239,11 +239,11 @@ export default function MatchDetailPage() {
           </div>
         </div>
 
-        {/* Date Negotiation Status */}
+        {/* Date Proposal Status */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
           <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <Calendar className="w-5 h-5 text-rose-500" />
-            Date Status
+            Date Proposal
           </h3>
 
           {/* No proposal yet */}
@@ -272,9 +272,9 @@ export default function MatchDetailPage() {
                     dateRequest.status === 'countered' ? 'bg-blue-100 text-blue-800' :
                     'bg-red-100 text-red-800'
                   }`}>
-                    {dateRequest.status === 'pending' ? 'Pending' :
-                     dateRequest.status === 'accepted' ? 'Accepted' :
-                     dateRequest.status === 'countered' ? 'Counter Proposal' :
+                    {dateRequest.status === 'pending' ? 'Proposal Pending' :
+                     dateRequest.status === 'accepted' ? 'Proposal Accepted' :
+                     dateRequest.status === 'countered' ? 'New Suggestion' :
                      'Declined'}
                   </span>
                   <span className="text-lg font-bold text-slate-900">
@@ -319,7 +319,7 @@ export default function MatchDetailPage() {
               {dateRequest.status === 'countered' && isSender && (
                 <div className="flex items-center gap-2 text-blue-600 bg-blue-50 rounded-xl p-3">
                   <RefreshCw className="w-5 h-5" />
-                  <span className="text-sm font-medium">{otherUser.first_name} sent a counter proposal!</span>
+                  <span className="text-sm font-medium">{otherUser.first_name} suggested something different!</span>
                 </div>
               )}
 
@@ -340,7 +340,7 @@ export default function MatchDetailPage() {
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-600 rounded-xl font-semibold"
                     >
                       <RefreshCw className="w-4 h-4" />
-                      Counter
+                      Suggest Different
                     </Link>
                     <button
                       onClick={() => handleRespond('decline')}

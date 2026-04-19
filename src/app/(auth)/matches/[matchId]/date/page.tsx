@@ -102,7 +102,7 @@ export default function DateProposalPage() {
         });
         const data = await res.json();
         if (!res.ok) { toast.error(data.error || 'Failed'); return; }
-        toast.success('Counter proposal sent! 🔄');
+        toast.success('Suggestion sent! 🔄');
       } else {
         const res = await fetch('/api/dates/request', {
           method: 'POST',
@@ -160,7 +160,7 @@ export default function DateProposalPage() {
         </button>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-slate-900">
-            {counterId ? 'Counter Proposal' : 'Propose a Date'}
+            {counterId ? 'Suggest Something Else' : 'Propose a Date'}
           </h1>
           <p className="text-xs text-slate-500">
             {step === 'package' ? 'Step 1: Pick a date experience' : 'Step 2: Choose date & time'}
@@ -390,7 +390,7 @@ export default function DateProposalPage() {
               className="w-full flex items-center justify-center gap-2 px-4 py-3.5 gradient-bg text-white rounded-xl font-semibold disabled:opacity-50 transition-opacity"
             >
               <Send className="w-5 h-5" />
-              {sending ? 'Sending...' : counterId ? 'Send Counter Proposal' : 'Send Date Proposal'}
+              {sending ? 'Sending...' : counterId ? 'Send Suggestion' : 'Send Date Proposal'}
             </button>
             {(!scheduledDate || !scheduledTime) && (
               <p className="text-xs text-slate-400 text-center mt-2">Pick a date and time to continue</p>

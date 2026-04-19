@@ -29,9 +29,9 @@ export const MatchCard: React.FC<MatchCardProps> = ({ match }) => {
   const getStatusText = () => {
     switch (match.status) {
       case 'matched': return 'New Match';
-      case 'date_pending': return 'Date Pending';
-      case 'date_accepted': return 'Date Accepted';
-      case 'paid': return 'Date Paid';
+      case 'date_pending': return 'Proposal Pending';
+      case 'date_accepted': return 'Proposal Accepted';
+      case 'paid': return 'Date Confirmed';
       case 'completed': return 'Date Complete';
       default: return 'Match';
     }

@@ -36,9 +36,9 @@ export default function MatchesPage() {
   const getStatusBadge = (match: Match) => {
     switch (match.status) {
       case 'matched': return { text: 'New', color: 'bg-green-500' };
-      case 'date_pending': return { text: 'Date Pending', color: 'bg-amber-500' };
-      case 'date_accepted': return { text: 'Date Set', color: 'bg-blue-500' };
-      case 'paid': return { text: 'Date Paid', color: 'bg-purple-500' };
+      case 'date_pending': return { text: 'Proposal Pending', color: 'bg-amber-500' };
+      case 'date_accepted': return { text: 'Proposal Accepted', color: 'bg-blue-500' };
+      case 'paid': return { text: 'Date Confirmed', color: 'bg-purple-500' };
       case 'completed': return { text: 'Complete', color: 'bg-slate-400' };
       default: return null;
     }
