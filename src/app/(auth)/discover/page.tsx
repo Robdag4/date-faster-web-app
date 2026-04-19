@@ -22,6 +22,53 @@ export default function DiscoverPage() {
     matchId?: string;
   }>({ show: false });
   
+  const [locationPrompt, setLocationPrompt] = useState(false);
+
+  // Update location on mount
+  useEffect(() => {
+    if (!user) return;
+    const updateLocation = async () => {
+      try {
+        const perm = await navigator.permissions?.query({ name: 'geolocation' });
+        if (perm?.state === 'granted') {
+          // Silently update
+          navigator.geolocation.getCurrentPosition(async (pos) => {
+            const { supabase } = await import('@/lib/supabase');
+            await supabase.from('users').update({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            }).eq('id', user.id);
+          }, () => {}, { enableHighAccuracy: true, timeout: 5000 });
+        } else if (perm?.state === 'prompt') {
+          setLocationPrompt(true);
+        }
+      } catch {
+        // permissions API not supported, show prompt
+        setLocationPrompt(true);
+      }
+    };
+    updateLocation();
+  }, [user]);
+
+  const handleLocationPermission = async () => {
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 })
+      );
+      const { supabase } = await import('@/lib/supabase');
+      await supabase.from('users').update({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      }).eq('id', user?.id);
+      setLocationPrompt(false);
+      toast.success('Location updated!');
+      loadDiscoveryFeed(); // reload with new location
+    } catch {
+      toast.error("Couldn't get location — using your last known location");
+      setLocationPrompt(false);
+    }
+  };
+
   // Load discovery feed
   useEffect(() => {
     loadDiscoveryFeed();
@@ -80,6 +127,19 @@ export default function DiscoverPage() {
 
   return (
     <div className="max-w-md mx-auto p-4 h-full flex flex-col">
+      {/* Location Prompt */}
+      {locationPrompt && (
+        <div className="mb-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-blue-900">📍 Enable location</p>
+            <p className="text-xs text-blue-700">Find matches near you</p>
+          </div>
+          <button onClick={handleLocationPermission} className="px-4 py-2 rounded-xl text-sm font-semibold text-white gradient-bg">
+            Allow
+          </button>
+        </div>
+      )}
+
       {/* Discovery Stack */}
       <div className="flex-1 relative overflow-hidden">
         {!hasMoreProfiles ? (
