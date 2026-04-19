@@ -269,7 +269,7 @@ export default function MixerPage() {
 
       if (response.ok) {
         if (data.mutual && data.matchId) {
-          toast.success('🎉 It's a match! You can now chat.');
+          toast.success('🎉 It\'s a match! You can now chat.');
         }
         loadAttendees(); // Refresh attendees
       } else {

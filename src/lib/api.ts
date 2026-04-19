@@ -1,6 +1,6 @@
 'use client';
 
-import { createClientClient } from './supabase';
+import { supabase as supabaseClient } from './supabase';
 import type { 
   User, 
   DiscoveryProfile, 
@@ -13,7 +13,7 @@ import type {
   MixerStatement
 } from '@/types';
 
-const supabase = createClientClient();
+const supabase = supabaseClient;
 
 // Custom error class for API errors
 export class ApiError extends Error {

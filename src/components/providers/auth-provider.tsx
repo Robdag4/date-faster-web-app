@@ -1,9 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/auth-helpers-nextjs';
 import { Session } from '@supabase/supabase-js';
-import { createClientClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { User as AppUser } from '@/types';
 
 interface AuthContextType {
@@ -38,8 +37,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClientClient();
-
   const fetchUserProfile = async (userId: string): Promise<AppUser | null> => {
     try {
       const { data, error } = await supabase
