@@ -24,25 +24,28 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-cream-50 flex flex-col">
+    <div className="fixed inset-0 bg-cream-50 flex flex-col" style={{ height: '100dvh' }}>
       {/* Header */}
-      <Header />
+      <div className="shrink-0">
+        <Header />
+      </div>
       
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-y-auto min-h-0">
         <motion.div
           key={pathname}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="h-full"
         >
           {children}
         </motion.div>
       </main>
       
-      {/* Mobile Navigation */}
-      <MobileNav />
+      {/* Mobile Navigation - Sticky Bottom */}
+      <div className="shrink-0">
+        <MobileNav />
+      </div>
     </div>
   );
 };
