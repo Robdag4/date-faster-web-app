@@ -115,6 +115,7 @@ export default function OnboardingPage() {
         setProfile(p => ({ ...p, age, date_of_birth: dobStr }));
         add('bot', "Got it! What's your gender?");
         setStep('gender');
+        setShowEventCode(false);
         break;
       }
       case 'gender': {
@@ -181,14 +182,54 @@ export default function OnboardingPage() {
     add('user', goal);
     setProfile(p => ({ ...p, relationship_goal: g }));
     setTimeout(() => {
-      add('bot', "Profile looking great! 🔥 Now upload at least 3 photos 📸 (max 6). Your first photo will be your main pic!");
+      add('bot', "Profile looking great! 🔥 Now upload at least 3 photos or short videos 📸🎬 (max 6, videos up to 5s). Your first one will be your main pic!");
       setStep('photos');
     }, 400);
+  };
+
+  const getVideoDuration = (file: File): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(video.duration);
+      };
+      video.onerror = () => reject(new Error('Could not read video'));
+      video.src = URL.createObjectURL(file);
+    });
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user?.id) return;
+    
+    const isVideo = file.type.startsWith('video/');
+    
+    // Validate video duration (max 5 seconds)
+    if (isVideo) {
+      try {
+        const duration = await getVideoDuration(file);
+        if (duration > 5) {
+          add('bot', `Video is ${Math.round(duration)}s — max 5 seconds! Trim it down ✂️`);
+          if (fileRef.current) fileRef.current.value = '';
+          return;
+        }
+      } catch {
+        add('bot', 'Couldn\'t read that video. Try a different one!');
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
+    }
+
+    // Limit file size (images 10MB, videos 20MB)
+    const maxSize = isVideo ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      add('bot', `File too large! Max ${isVideo ? '20MB' : '10MB'}`);
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+
     setUploading(true);
     try {
       // Upload to Supabase Storage
@@ -197,7 +238,7 @@ export default function OnboardingPage() {
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('photos')
-        .upload(fileName, file);
+        .upload(fileName, file, { contentType: file.type });
 
       if (uploadError) throw uploadError;
 
@@ -214,12 +255,14 @@ export default function OnboardingPage() {
         .update({ photos: newPhotos })
         .eq('id', user.id);
 
-      add('user', `📸 Photo uploaded (${newPhotos.length}/6)`);
+      const emoji = isVideo ? '🎬' : '📸';
+      const label = isVideo ? 'Video' : 'Photo';
+      add('user', `${emoji} ${label} uploaded (${newPhotos.length}/6)`);
       if (newPhotos.length === 3) {
         add('bot', 'Looking great! You have the minimum 3. Add more or tap Continue →');
       }
     } catch (error) {
-      console.error('Photo upload error:', error);
+      console.error('Upload error:', error);
       add('bot', 'Upload failed. Try again!');
     } finally { 
       setUploading(false); 
@@ -363,17 +406,52 @@ export default function OnboardingPage() {
       </div>
 
       {/* Quick replies */}
-      {replies && (
-        <div className="flex justify-center gap-2 px-4 py-2 flex-wrap">
-          {replies.map(opt => (
+      {replies && !showEventCode && (
+        <div className="px-4 py-2 space-y-2 bg-white border-t border-slate-200">
+          <div className="flex justify-center gap-2 flex-wrap">
+            {replies.map(opt => (
+              <button
+                key={opt}
+                onClick={() => step === 'relationship_goal' ? handleGoalSelect(opt) : handleSend(opt)}
+                className="px-5 py-2 rounded-full text-sm font-semibold transition shadow-sm bg-white border border-rose-500 text-rose-500 hover:bg-rose-50"
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+          {step === 'gender' && (
             <button
-              key={opt}
-              onClick={() => step === 'relationship_goal' ? handleGoalSelect(opt) : handleSend(opt)}
-              className="px-5 py-2 rounded-full text-sm font-semibold transition shadow-sm bg-white border border-rose-500 text-rose-500 hover:bg-rose-50"
+              onClick={() => setShowEventCode(true)}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-rose-500 text-rose-500 hover:bg-rose-50"
             >
-              {opt}
+              🎟️ Have an event code? Skip ahead
             </button>
-          ))}
+          )}
+        </div>
+      )}
+
+      {/* Event code entry (available after name + birthday) */}
+      {showEventCode && ['gender', 'sexuality', 'job', 'interests', 'ideal_date', 'tagline', 'relationship_goal', 'photos'].includes(step) && (
+        <div className="px-4 py-3 space-y-2 bg-white border-t border-slate-200">
+          <p className="text-sm text-center text-slate-600">Enter your event code to skip the rest</p>
+          <input
+            value={eventCodeInput}
+            onChange={e => setEventCodeInput(e.target.value.toUpperCase())}
+            placeholder="EVENT CODE"
+            className="w-full px-4 py-3 rounded-xl text-center text-lg font-bold tracking-widest outline-none bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
+            onKeyDown={e => e.key === 'Enter' && handleEventCodeBypass()}
+          />
+          {eventCodeError && <p className="text-xs text-red-500 text-center">{eventCodeError}</p>}
+          <div className="flex gap-2">
+            <button onClick={() => setShowEventCode(false)}
+              className="flex-1 py-3 rounded-xl font-semibold text-sm bg-cream-50 border border-slate-200 text-slate-900 hover:bg-slate-100">
+              ← Back
+            </button>
+            <button onClick={handleEventCodeBypass}
+              className="flex-1 py-3 rounded-xl text-white font-semibold text-sm gradient-bg">
+              Verify & Skip →
+            </button>
+          </div>
         </div>
       )}
 
@@ -409,60 +487,34 @@ export default function OnboardingPage() {
       )}
 
       {/* Photo upload */}
-      {step === 'photos' && (
+      {step === 'photos' && !showEventCode && (
         <div className="px-4 py-3 space-y-2 bg-white border-t border-slate-200">
-          {!showEventCode ? (
-            <>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading || photos.length >= 6}
-                  className="flex-1 py-3 rounded-xl text-white font-semibold disabled:opacity-40 bg-slate-600 hover:bg-slate-700"
-                >
-                  {uploading ? 'Uploading...' : `📸 Upload Photo (${photos.length}/6)`}
-                </button>
-                {photos.length >= 3 && (
-                  <button onClick={handlePhotoDone} className="py-3 px-5 rounded-xl text-white font-semibold gradient-bg">
-                    Continue →
-                  </button>
-                )}
-              </div>
-              {photos.length < 3 && (
-                <p className="text-xs text-center text-slate-600">
-                  Minimum 3 photos required ({3 - photos.length} more needed)
-                </p>
-              )}
-              <button
-                onClick={() => setShowEventCode(true)}
-                className="w-full py-3 rounded-xl text-sm font-semibold bg-white border-2 border-rose-500 text-rose-500 hover:bg-rose-50"
-              >
-                🎟️ Have an event code? Skip photos
+          <div className="flex gap-2">
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading || photos.length >= 6}
+              className="flex-1 py-3 rounded-xl text-white font-semibold disabled:opacity-40 bg-slate-600 hover:bg-slate-700"
+            >
+              {uploading ? 'Uploading...' : `📸 Upload Photo/Video (${photos.length}/6)`}
+            </button>
+            {photos.length >= 3 && (
+              <button onClick={handlePhotoDone} className="py-3 px-5 rounded-xl text-white font-semibold gradient-bg">
+                Continue →
               </button>
-            </>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-sm text-center text-slate-600">Enter your event code to skip photos</p>
-              <input
-                value={eventCodeInput}
-                onChange={e => setEventCodeInput(e.target.value.toUpperCase())}
-                placeholder="EVENT CODE"
-                className="w-full px-4 py-3 rounded-xl text-center text-lg font-bold tracking-widest outline-none bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
-                onKeyDown={e => e.key === 'Enter' && handleEventCodeBypass()}
-              />
-              {eventCodeError && <p className="text-xs text-red-500 text-center">{eventCodeError}</p>}
-              <div className="flex gap-2">
-                <button onClick={() => setShowEventCode(false)}
-                  className="flex-1 py-3 rounded-xl font-semibold text-sm bg-cream-50 border border-slate-200 text-slate-900 hover:bg-slate-100">
-                  ← Back
-                </button>
-                <button onClick={handleEventCodeBypass}
-                  className="flex-1 py-3 rounded-xl text-white font-semibold text-sm gradient-bg">
-                  Verify & Skip →
-                </button>
-              </div>
-            </div>
+            )}
+          </div>
+          {photos.length < 3 && (
+            <p className="text-xs text-center text-slate-600">
+              Minimum 3 photos/videos required ({3 - photos.length} more needed)
+            </p>
           )}
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+          <button
+            onClick={() => setShowEventCode(true)}
+            className="w-full py-3 rounded-xl text-sm font-semibold bg-white border-2 border-rose-500 text-rose-500 hover:bg-rose-50"
+          >
+            🎟️ Have an event code? Skip photos
+          </button>
+          <input ref={fileRef} type="file" accept="image/*,video/mp4,video/quicktime,video/webm" className="hidden" onChange={handlePhotoUpload} />
         </div>
       )}
 

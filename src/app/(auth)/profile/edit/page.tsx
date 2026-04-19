@@ -38,23 +38,45 @@ export default function EditProfilePage() {
     );
   };
 
+  const getVideoDuration = (file: File): Promise<number> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => { URL.revokeObjectURL(video.src); resolve(video.duration); };
+      video.onerror = () => reject(new Error('Could not read video'));
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user?.id || photos.length >= 6) return;
+    
+    const isVideo = file.type.startsWith('video/');
+    if (isVideo) {
+      try {
+        const duration = await getVideoDuration(file);
+        if (duration > 5) { toast.error(`Video is ${Math.round(duration)}s — max 5 seconds`); if (fileRef.current) fileRef.current.value = ''; return; }
+      } catch { toast.error('Could not read video'); if (fileRef.current) fileRef.current.value = ''; return; }
+    }
+    const maxSize = isVideo ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) { toast.error(`File too large! Max ${isVideo ? '20MB' : '10MB'}`); if (fileRef.current) fileRef.current.value = ''; return; }
+
     setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, file);
+      const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, file, { contentType: file.type });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('photos').getPublicUrl(fileName);
       setPhotos(prev => [...prev, urlData.publicUrl]);
-      toast.success('Photo uploaded!');
+      toast.success(isVideo ? 'Video uploaded!' : 'Photo uploaded!');
     } catch {
       toast.error('Upload failed');
     } finally {
-      setUploading(false);
+      setUploading(true);
       if (fileRef.current) fileRef.current.value = '';
+      setUploading(false);
     }
   };
 
@@ -111,9 +133,13 @@ export default function EditProfilePage() {
         <div className="bg-white rounded-2xl p-4 border border-slate-200">
           <h3 className="font-semibold text-slate-900 mb-3">Photos</h3>
           <div className="grid grid-cols-3 gap-2">
-            {photos.map((photo, i) => (
+            {photos.map((photo, i) => {
+              const isVid = /\.(mp4|mov|webm)(\?|$)/i.test(photo);
+              return (
               <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
-                {!imageErrors.has(i) ? (
+                {isVid ? (
+                  <video src={photo} muted loop playsInline autoPlay className="w-full h-full object-cover" />
+                ) : !imageErrors.has(i) ? (
                   <Image src={photo} alt="" fill className="object-cover" onError={() => setImageErrors(prev => new Set(prev).add(i))} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -132,7 +158,8 @@ export default function EditProfilePage() {
                   </div>
                 )}
               </div>
-            ))}
+            );
+            })}
             {photos.length < 6 && (
               <button
                 onClick={() => fileRef.current?.click()}
@@ -144,7 +171,7 @@ export default function EditProfilePage() {
               </button>
             )}
           </div>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+          <input ref={fileRef} type="file" accept="image/*,video/mp4,video/quicktime,video/webm" className="hidden" onChange={handlePhotoUpload} />
         </div>
 
         {/* Basic Info */}
