@@ -419,7 +419,7 @@ export default function OnboardingPage() {
               </button>
             ))}
           </div>
-          {['gender', 'sexuality'].includes(step) && (
+          {step === 'sexuality' && (
             <button
               onClick={() => setShowEventCode(true)}
               className="w-full py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-rose-500 text-rose-500 hover:bg-rose-50"
