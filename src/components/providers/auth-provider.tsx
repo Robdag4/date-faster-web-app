@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .from('users')
         .select('*')
         .eq('id', userId)
-        .eq('deleted_at', null)
+        .is('deleted_at', null)
         .single();
 
       if (error || !data) {
