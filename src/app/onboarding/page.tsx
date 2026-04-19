@@ -419,12 +419,12 @@ export default function OnboardingPage() {
               </button>
             ))}
           </div>
-          {step === 'gender' && (
+          {['gender', 'sexuality'].includes(step) && (
             <button
               onClick={() => setShowEventCode(true)}
               className="w-full py-2.5 rounded-xl text-sm font-semibold bg-white border-2 border-rose-500 text-rose-500 hover:bg-rose-50"
             >
-              🎟️ Have an event code? Skip ahead
+              🎟️ Skip the rest with an event code
             </button>
           )}
         </div>
@@ -483,6 +483,12 @@ export default function OnboardingPage() {
           >
             Continue ({selectedInterests.length} selected)
           </button>
+          <button
+            onClick={() => setShowEventCode(true)}
+            className="w-full py-2 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50"
+          >
+            🎟️ Skip the rest with an event code
+          </button>
         </div>
       )}
 
@@ -528,19 +534,29 @@ export default function OnboardingPage() {
       )}
 
       {/* Text input */}
-      {!['location', 'done', 'photos', 'interests', 'relationship_goal', 'gender', 'sexuality'].includes(step) && (
-        <div className="flex items-end gap-2 px-4 py-3 bg-white border-t border-slate-200 shrink-0 pb-safe">
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
-            placeholder="Type your answer..."
-            className="flex-1 rounded-full px-4 py-2.5 outline-none text-[15px] bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
-          />
-          <button onClick={() => handleSend()}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold gradient-bg">
-            →
-          </button>
+      {!['location', 'done', 'photos', 'interests', 'relationship_goal', 'gender', 'sexuality'].includes(step) && !showEventCode && (
+        <div className="px-4 py-3 bg-white border-t border-slate-200 shrink-0 pb-safe space-y-2">
+          <div className="flex items-end gap-2">
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+              placeholder="Type your answer..."
+              className="flex-1 rounded-full px-4 py-2.5 outline-none text-[15px] bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
+            />
+            <button onClick={() => handleSend()}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold gradient-bg">
+              →
+            </button>
+          </div>
+          {!['name', 'age'].includes(step) && (
+            <button
+              onClick={() => setShowEventCode(true)}
+              className="w-full py-2 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50"
+            >
+              🎟️ Skip the rest with an event code
+            </button>
+          )}
         </div>
       )}
     </div>
