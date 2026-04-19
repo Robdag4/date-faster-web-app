@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-cream-50 text-slate-900;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: "Inter", sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-rose-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-rose-600 transition-colors duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-rose-500 border border-rose-500 px-6 py-3 rounded-lg font-medium hover:bg-rose-50 transition-colors duration-200;
+  }
+  
+  .btn-ghost {
+    @apply text-slate-600 px-6 py-3 rounded-lg font-medium hover:bg-slate-100 transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-slate-200 p-6;
+  }
+  
+  .input {
+    @apply w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-colors duration-200 outline-none;
+  }
+  
+  .label {
+    @apply block text-sm font-medium text-slate-700 mb-2;
+  }
+  
+  .text-muted {
+    @apply text-slate-600;
+  }
+  
+  .text-primary {
+    @apply text-rose-500;
+  }
+  
+  .gradient-bg {
+    background: linear-gradient(135deg, #FFF5F5 0%, #FCE7F3 100%);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  body {
+    @apply text-base;
+  }
+  
+  .card {
+    @apply rounded-xl p-4;
+  }
+  
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost {
+    @apply px-4 py-2.5 text-sm;
+  }
+}
+
+/* Touch targets for mobile */
+@media (max-width: 640px) {
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+}
