@@ -240,15 +240,19 @@ export const discovery = {
     const myLng = me.custom_longitude || me.longitude || -74.006;
 
     const withDistance = profiles.map((p: any) => {
-      const pLat = p.latitude || 40.7128;
-      const pLng = p.longitude || -74.006;
+      // If user has no real location, show them with null distance (skip radius filter)
+      if (!p.latitude && !p.longitude) {
+        return { ...p, distance: null };
+      }
+      const pLat = p.latitude;
+      const pLng = p.longitude;
       const R = 3959; // miles
       const dLat = (pLat - myLat) * Math.PI / 180;
       const dLon = (pLng - myLng) * Math.PI / 180;
       const a = Math.sin(dLat / 2) ** 2 + Math.cos(myLat * Math.PI / 180) * Math.cos(pLat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
       const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return { ...p, distance: Math.round(dist) };
-    }).filter((p: any) => p.distance <= maxDist);
+    }).filter((p: any) => p.distance === null || p.distance <= maxDist);
 
     // Premium users first, then randomize
     withDistance.sort((a: any, b: any) => {
