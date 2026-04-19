@@ -67,9 +67,13 @@ export default function EditProfilePage() {
       const formData = new FormData();
       formData.append('file', file);
       const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      console.log('Upload: token present?', !!token);
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        headers,
         body: formData,
       });
       const data = await res.json();
