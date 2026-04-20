@@ -269,61 +269,22 @@ export const discovery = {
     targetId: string, 
     direction: 'like' | 'pass'
   ): Promise<{ success: boolean; matched: boolean; matchId: string | null }> => {
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    
-    if (!userId) {
-      throw new ApiError('Not authenticated', 401);
-    }
+    const session = (await supabase.auth.getSession()).data.session;
+    if (!session) throw new ApiError('Not authenticated', 401);
 
-    // Insert swipe
-    const { error: swipeError } = await supabase
-      .from('swipes')
-      .insert([
-        {
-          swiper_id: userId,
-          swiped_id: targetId,
-          direction,
-        },
-      ]);
+    const res = await fetch('/api/swipe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ targetId, direction }),
+    });
 
-    handleSupabaseError(swipeError);
+    const data = await res.json();
+    if (!res.ok) throw new ApiError(data.error || 'Swipe failed', res.status);
 
-    let matched = false;
-    let matchId: string | null = null;
-
-    // Check for mutual like
-    if (direction === 'like') {
-      const { data: reverseSwipe, error: reverseError } = await supabase
-        .from('swipes')
-        .select('*')
-        .eq('swiper_id', targetId)
-        .eq('swiped_id', userId)
-        .eq('direction', 'like')
-        .single();
-
-      if (!reverseError && reverseSwipe) {
-        // Create match
-        const [user1Id, user2Id] = [userId, targetId].sort();
-        
-        const { data: newMatch, error: matchError } = await supabase
-          .from('matches')
-          .insert([
-            {
-              user1_id: user1Id,
-              user2_id: user2Id,
-              status: 'matched',
-              source: 'swipe',
-            },
-          ])
-          .select()
-          .single();
-
-        if (!matchError && newMatch) {
-          matched = true;
-          matchId = newMatch.id;
-        }
-      }
-    }
+    const { matched, matchId } = data;
 
     return { success: true, matched, matchId };
   },
