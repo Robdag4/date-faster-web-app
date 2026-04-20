@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { useAuth } from '@/components/providers/auth-provider';
 import { DiscoveryCard, DiscoveryCardHandle } from '@/components/discovery/discovery-card';
 import { EmptyState } from '@/components/discovery/empty-state';
@@ -23,6 +24,7 @@ export default function DiscoverPage() {
   }>({ show: false });
   
   const [locationPrompt, setLocationPrompt] = useState(false);
+  const [likedMe, setLikedMe] = useState<{ count: number; profiles: any[] }>({ count: 0, profiles: [] });
   const cardRef = useRef<DiscoveryCardHandle>(null);
 
   // Update location on mount
@@ -81,6 +83,17 @@ export default function DiscoverPage() {
       const feed = await api.discovery.feed();
       setProfiles(feed);
       setCurrentIndex(0);
+      // Load liked-me count
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const session = (await supabase.auth.getSession()).data.session;
+        if (session) {
+          const res = await fetch('/api/discovery/liked-me', {
+            headers: { 'Authorization': `Bearer ${session.access_token}` },
+          });
+          if (res.ok) setLikedMe(await res.json());
+        }
+      } catch {}
     } catch (error: any) {
       console.error('Load discovery feed error:', error);
       toast.error('Failed to load profiles');
@@ -167,6 +180,36 @@ export default function DiscoverPage() {
             Allow
           </button>
         </div>
+      )}
+
+      {/* Liked You Card */}
+      {likedMe.count > 0 && (
+        <Link href={user?.is_premium ? '/matches?tab=liked' : '/premium'}
+          className="mb-3 rounded-2xl overflow-hidden shadow-sm border border-rose-100 bg-white flex items-center gap-3 p-3">
+          {/* Blurred photo grid */}
+          <div className="flex -space-x-3 shrink-0">
+            {likedMe.profiles.slice(0, 3).map((p: any, i: number) => (
+              <div key={i} className="w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-slate-200">
+                {p.photo ? (
+                  <img src={p.photo} alt="" className={`w-full h-full object-cover ${!user?.is_premium ? 'blur-md' : ''}`} />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-rose-300 to-pink-400" />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-900">
+              {likedMe.count} {likedMe.count === 1 ? 'person' : 'people'} liked you
+            </p>
+            <p className="text-xs text-slate-500">
+              {user?.is_premium ? 'Tap to see who' : 'Upgrade to Premium to reveal ⭐'}
+            </p>
+          </div>
+          <div className="shrink-0 w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center">
+            <span className="text-white text-sm font-bold">{likedMe.count}</span>
+          </div>
+        </Link>
       )}
 
       {/* Discovery Stack */}

@@ -57,6 +57,15 @@ interface PlayTarget {
 }
 
 export default function MixerPage() {
+  const getAuthHeaders = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } as Record<string, string> : {} as Record<string, string>;
+  };
+
+  const authFetch = async (url: string, opts: any = {}) => {
+    const ah = await getAuthHeaders();
+    return fetch(url, { ...opts, headers: { ...ah, ...(opts.headers || {}) } });
+  };
   const [activeTab, setActiveTab] = useState<'join' | 'statements' | 'play' | 'attendees'>('join');
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventStatus, setEventStatus] = useState<string>('draft');
@@ -91,7 +100,7 @@ export default function MixerPage() {
   const checkMixerStatus = async () => {
     try {
       // Check for statements first to see if we're in an event
-      const statementsResponse = await fetch('/api/mixer/statements');
+      const ah = await authHeaders(); const statementsResponse = await fetch('/api/events/mixer/statements', { headers: ah });
       if (statementsResponse.ok) {
         const data = await statementsResponse.json();
         if (data.eventId) {
@@ -124,7 +133,7 @@ export default function MixerPage() {
 
     setJoining(true);
     try {
-      const response = await fetch('/api/mixer/checkin', {
+      const ah2 = await authHeaders(); const response = await fetch('/api/events/mixer/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ eventCode: eventCode.trim() })
@@ -156,7 +165,7 @@ export default function MixerPage() {
 
     setSavingStatements(true);
     try {
-      const response = await fetch('/api/mixer/statements', {
+      const ah3 = await authHeaders(); const response = await fetch('/api/events/mixer/statements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(statements)
@@ -179,7 +188,7 @@ export default function MixerPage() {
 
   const startPlaying = async () => {
     try {
-      const response = await fetch('/api/mixer/play', {
+      const ah4 = await authHeaders(); const response = await fetch('/api/events/mixer/play', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -210,7 +219,7 @@ export default function MixerPage() {
     if (!currentTarget || selectedGuess === null) return;
 
     try {
-      const response = await fetch('/api/mixer/guess', {
+      const ah5 = await authHeaders(); const response = await fetch('/api/events/mixer/guess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -247,7 +256,7 @@ export default function MixerPage() {
 
   const loadAttendees = async () => {
     try {
-      const response = await fetch('/api/mixer/attendees');
+      const ah6 = await authHeaders(); const response = await fetch('/api/events/mixer/attendees', { headers: ah6 });
       if (response.ok) {
         const data = await response.json();
         setAttendees(data);
@@ -259,7 +268,7 @@ export default function MixerPage() {
 
   const toggleLike = async (attendeeId: string, currentlyLiked: boolean) => {
     try {
-      const response = await fetch('/api/mixer/like', {
+      const ah7 = await authHeaders(); const response = await fetch('/api/events/mixer/like', {
         method: currentlyLiked ? 'DELETE' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetId: attendeeId })

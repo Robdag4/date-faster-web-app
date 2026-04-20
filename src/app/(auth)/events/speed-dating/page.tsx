@@ -77,7 +77,10 @@ export default function SpeedDatingPage() {
 
   const checkCurrentEvent = async () => {
     try {
-      const response = await fetch('/api/speed-dating/current');
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/events/speed-dating/current', {
+        headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
+      });
       if (response.ok) {
         const data = await response.json();
         setEventStatus(data);
@@ -100,9 +103,10 @@ export default function SpeedDatingPage() {
 
     setJoining(true);
     try {
-      const response = await fetch('/api/speed-dating/checkin', {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/events/checkin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}) },
         body: JSON.stringify({ eventCode: eventCode.trim() })
       });
 
@@ -127,9 +131,10 @@ export default function SpeedDatingPage() {
 
     setVoting(true);
     try {
-      const response = await fetch('/api/speed-dating/vote', {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/events/speed-dating/vote', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}) },
         body: JSON.stringify({
           roundId: eventStatus.votingRound.id,
           targetId: eventStatus.currentPairing.partnerId,
