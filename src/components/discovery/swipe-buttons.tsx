@@ -7,6 +7,7 @@ interface SwipeButtonsProps {
   onPass: () => void;
   onLike: () => void;
   onUndo?: () => void;
+  showUndo?: boolean;
   disabled?: boolean;
 }
 
@@ -14,22 +15,27 @@ export const SwipeButtons: React.FC<SwipeButtonsProps> = ({
   onPass,
   onLike,
   onUndo,
+  showUndo = false,
   disabled = false,
 }) => {
+  const undoDisabled = disabled || !onUndo;
+
   return (
-    <div className="flex items-center justify-center space-x-6">
-      {/* Undo Button */}
-      {onUndo && (
-        <motion.button
-          onClick={onUndo}
-          disabled={disabled}
-          className="w-12 h-12 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 rounded-full flex items-center justify-center transition-colors disabled:cursor-not-allowed"
-          whileHover={!disabled ? { scale: 1.1 } : undefined}
-          whileTap={!disabled ? { scale: 0.95 } : undefined}
-        >
-          <RotateCcw className="w-5 h-5 text-gray-600" />
-        </motion.button>
-      )}
+    <div className="flex items-center justify-center space-x-5">
+      {/* Undo Button — always visible, disabled when can't undo */}
+      <motion.button
+        onClick={onUndo}
+        disabled={undoDisabled}
+        className={`w-12 h-12 rounded-full flex items-center justify-center shadow transition-colors ${
+          undoDisabled
+            ? 'bg-gray-100 cursor-not-allowed'
+            : 'bg-white border-2 border-amber-300 hover:bg-amber-50 active:bg-amber-100'
+        }`}
+        whileHover={!undoDisabled ? { scale: 1.1 } : undefined}
+        whileTap={!undoDisabled ? { scale: 0.95 } : undefined}
+      >
+        <RotateCcw className={`w-5 h-5 ${undoDisabled ? 'text-gray-300' : 'text-amber-500'}`} />
+      </motion.button>
 
       {/* Pass Button */}
       <motion.button
@@ -52,15 +58,6 @@ export const SwipeButtons: React.FC<SwipeButtonsProps> = ({
       >
         <Heart className="w-7 h-7 text-white fill-current" />
       </motion.button>
-
-      {/* Super Like Button (Optional - can be added later) */}
-      {/* <motion.button
-        className="w-12 h-12 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors shadow-lg"
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Star className="w-5 h-5 text-white fill-current" />
-      </motion.button> */}
     </div>
   );
 };

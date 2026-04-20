@@ -109,9 +109,37 @@ export default function DiscoverPage() {
     }
   };
 
-  const handleUndoSwipe = () => {
-    if (currentIndex > 0) {
+  const handleUndoSwipe = async () => {
+    if (currentIndex <= 0) return;
+    const prevProfile = profiles[currentIndex - 1];
+    if (!prevProfile) return;
+
+    try {
+      const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session;
+      if (!session) return;
+
+      const res = await fetch('/api/swipe/undo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ targetId: prevProfile.id }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        if (res.status === 403) {
+          toast('⭐ Undo is a Premium feature', { icon: '🔒' });
+          return;
+        }
+        throw new Error(data.error);
+      }
+
       setCurrentIndex((prev) => prev - 1);
+      toast.success('Swipe undone!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to undo');
     }
   };
 
@@ -177,6 +205,7 @@ export default function DiscoverPage() {
             onPass={() => cardRef.current ? cardRef.current.flyOut('pass') : handleSwipe('pass')}
             onLike={() => cardRef.current ? cardRef.current.flyOut('like') : handleSwipe('like')}
             onUndo={currentIndex > 0 ? handleUndoSwipe : undefined}
+            showUndo={true}
             disabled={!currentProfile}
           />
           
