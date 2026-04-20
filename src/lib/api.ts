@@ -234,12 +234,18 @@ export const discovery = {
     const { data: profiles, error } = await query.limit(50);
     if (error || !profiles) return [];
 
+    // Filter out users with fewer than 3 photos
+    const withPhotos = profiles.filter((p: any) => {
+      const photos = Array.isArray(p.photos) ? p.photos.filter((url: string) => url) : [];
+      return photos.length >= 3;
+    });
+
     // Calculate distance and filter
     const maxDist = distance || me.discovery_radius || 25;
     const myLat = me.custom_latitude || me.latitude || 40.7128;
     const myLng = me.custom_longitude || me.longitude || -74.006;
 
-    const withDistance = profiles.map((p: any) => {
+    const withDistance = withPhotos.map((p: any) => {
       // If user has no real location, show them with null distance (skip radius filter)
       if (!p.latitude && !p.longitude) {
         return { ...p, distance: null };
