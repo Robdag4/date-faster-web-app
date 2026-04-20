@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/auth-provider';
 import { ArrowLeft } from 'lucide-react';
 
 const benefits = [
+  { icon: '↩️', title: 'Undo Swipes', desc: 'Changed your mind? Go back and swipe again' },
   { icon: '🥷', title: 'Incognito+', desc: 'See incognito users while staying hidden from non-premium' },
   { icon: '🌍', title: 'Change Location', desc: 'Set your discovery location to anywhere in the world' },
   { icon: '⭐', title: 'Premium Badge', desc: 'Stand out with a premium badge on your profile' },
@@ -173,10 +174,10 @@ function PremiumContent() {
           ))}
         </div>
 
-        <div className="rounded-2xl p-6 text-center mb-4 gradient-bg shadow-lg">
-          <p className="text-white/80 text-sm mb-1">Monthly</p>
+        <div className="rounded-2xl p-6 text-center mb-4 bg-slate-900 shadow-lg">
+          <p className="text-slate-400 text-sm mb-1">Monthly</p>
           <div className="text-4xl font-bold text-white mb-1">$19.99</div>
-          <p className="text-white/70 text-sm">Cancel anytime</p>
+          <p className="text-slate-400 text-sm">Cancel anytime</p>
         </div>
 
         <button onClick={handleUpgrade} disabled={processing}
