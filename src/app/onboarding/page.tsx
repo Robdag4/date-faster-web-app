@@ -201,7 +201,7 @@ export default function OnboardingPage() {
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    let file = e.target.files?.[0];
     if (!file || !user?.id) return;
     
     const isVideo = file.type.startsWith('video/');
@@ -232,6 +232,11 @@ export default function OnboardingPage() {
 
     setUploading(true);
     try {
+      // Resize images client-side before upload
+      if (!isVideo) {
+        const { resizeImage } = await import('@/lib/image-utils');
+        file = await resizeImage(file);
+      }
       // Upload via API route (bypasses storage RLS)
       const formData = new FormData();
       formData.append('file', file);

@@ -49,7 +49,7 @@ export default function EditProfilePage() {
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    let file = e.target.files?.[0];
     if (!file || !user?.id || photos.length >= 6) return;
     
     const isVideo = file.type.startsWith('video/');
@@ -64,6 +64,11 @@ export default function EditProfilePage() {
 
     setUploading(true);
     try {
+      // Resize images client-side before upload
+      if (!isVideo) {
+        const { resizeImage } = await import('@/lib/image-utils');
+        file = await resizeImage(file);
+      }
       const formData = new FormData();
       formData.append('file', file);
       const { data: { session } } = await supabase.auth.getSession();
