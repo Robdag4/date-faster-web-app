@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { motion, useMotionValue, useTransform, animate, PanInfo } from 'framer-motion';
 import { MapPin, Briefcase, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react';
 import { DiscoveryProfile } from '@/types';
-import Image from 'next/image';
 
 interface DiscoveryCardProps {
   profile: DiscoveryProfile;
@@ -34,6 +33,14 @@ export const DiscoveryCard = forwardRef<DiscoveryCardHandle, DiscoveryCardProps>
   useImperativeHandle(ref, () => ({ flyOut }));
 
   const validPhotos = profile.photos?.filter(Boolean) || [];
+
+  // Preload all photos on mount
+  useEffect(() => {
+    validPhotos.forEach((url) => {
+      const img = new window.Image();
+      img.src = url;
+    });
+  }, [profile.id]);
   const hasMultiplePhotos = validPhotos.length > 1;
 
   const flyOut = (direction: 'like' | 'pass') => {
@@ -88,13 +95,11 @@ export const DiscoveryCard = forwardRef<DiscoveryCardHandle, DiscoveryCardProps>
       {/* Photo Section */}
       <div className="relative w-full" style={{ height: expanded ? '45%' : '65%', transition: 'height 0.3s ease' }}>
         {validPhotos.length > 0 ? (
-          <Image
+          <img
             src={validPhotos[currentPhotoIndex] || '/placeholder-avatar.jpg'}
             alt={profile.first_name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 400px"
-            unoptimized
+            className="absolute inset-0 w-full h-full object-cover"
+            draggable={false}
           />
         ) : (
           <div className="w-full h-full bg-slate-200 flex items-center justify-center">
