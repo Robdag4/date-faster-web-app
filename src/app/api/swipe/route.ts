@@ -29,10 +29,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid params' }, { status: 400 });
     }
 
-    // Insert swipe (service role bypasses RLS)
+    // Upsert swipe (handles re-swipes gracefully)
     const { error: swipeError } = await admin
       .from('swipes')
-      .insert({ swiper_id: user.id, swiped_id: targetId, direction });
+      .upsert(
+        { swiper_id: user.id, swiped_id: targetId, direction },
+        { onConflict: 'swiper_id,swiped_id' }
+      );
 
     if (swipeError) {
       return NextResponse.json({ error: swipeError.message }, { status: 400 });
@@ -53,15 +56,28 @@ export async function POST(req: NextRequest) {
 
       if (reverseSwipe) {
         const [user1Id, user2Id] = [user.id, targetId].sort();
-        const { data: newMatch } = await admin
+        // Check if match already exists
+        const { data: existingMatch } = await admin
           .from('matches')
-          .insert({ user1_id: user1Id, user2_id: user2Id, status: 'matched', source: 'swipe' })
           .select('id')
+          .eq('user1_id', user1Id)
+          .eq('user2_id', user2Id)
           .single();
 
-        if (newMatch) {
+        if (existingMatch) {
           matched = true;
-          matchId = newMatch.id;
+          matchId = existingMatch.id;
+        } else {
+          const { data: newMatch } = await admin
+            .from('matches')
+            .insert({ user1_id: user1Id, user2_id: user2Id, status: 'matched', source: 'swipe' })
+            .select('id')
+            .single();
+
+          if (newMatch) {
+            matched = true;
+            matchId = newMatch.id;
+          }
         }
       }
     }
