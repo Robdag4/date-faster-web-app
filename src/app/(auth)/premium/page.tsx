@@ -181,7 +181,7 @@ function PremiumContent() {
         </div>
 
         <button onClick={handleUpgrade} disabled={processing}
-          className="w-full py-4 rounded-2xl text-white font-semibold text-lg disabled:opacity-50 gradient-bg shadow-lg">
+          className="w-full py-4 rounded-2xl text-white font-semibold text-lg disabled:opacity-50 bg-rose-500 hover:bg-rose-600 shadow-lg">
           {processing ? 'Redirecting to checkout...' : 'Go Premium ⭐'}
         </button>
         <p className="text-center text-xs mt-3 text-slate-400">
