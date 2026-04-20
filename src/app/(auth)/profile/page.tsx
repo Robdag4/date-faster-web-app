@@ -37,7 +37,7 @@ export default function ProfilePage() {
   return (
     <div className="max-w-md mx-auto">
       {/* Cover Photo & Profile Picture */}
-      <div className="relative h-64 bg-gradient-to-br from-rose-400 to-pink-500">
+      <div className="relative h-48 bg-slate-100">
         {/* Edit button */}
         <Link
           href="/profile/edit"
