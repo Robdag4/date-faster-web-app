@@ -82,6 +82,18 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: urlData } = admin.storage.from('photos').getPublicUrl(fileName);
+
+    // Queue photo for moderation review
+    try {
+      await admin.from('photo_reviews').insert({
+        user_id: user.id,
+        photo_url: urlData.publicUrl,
+        status: 'pending',
+      });
+    } catch {
+      // photo_reviews table may not exist yet — non-blocking
+    }
+
     return NextResponse.json({ url: urlData.publicUrl });
   } catch (err: any) {
     console.error('Upload route error:', err);

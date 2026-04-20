@@ -100,6 +100,7 @@ export default function AdminDashboard() {
             { href: '/admin/duplicates', icon: '🔍', label: 'Duplicates', desc: 'Detect fake accounts' },
             { href: '/admin/venues', icon: '📍', label: 'Venues', desc: 'Manage venues' },
             { href: '/admin/redemptions', icon: '🎟️', label: 'Redemptions', desc: 'Track redemptions' },
+            { href: '/admin/photos', icon: '📸', label: 'Photo Review', desc: 'Moderate uploads' },
             { href: '/admin/speed-dating', icon: '⚡', label: 'Speed Dating', desc: 'Manage events' },
             { href: '/admin/mixer', icon: '🎭', label: 'Mixers', desc: 'Two Truths & a Lie' },
           ].map(nav => (

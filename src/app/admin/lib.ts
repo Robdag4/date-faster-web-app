@@ -31,6 +31,7 @@ export const adminApi = {
   lockUser: (id: string) => api('users', { method: 'PATCH', body: JSON.stringify({ id, action: 'lock' }) }),
   unlockUser: (id: string) => api('users', { method: 'PATCH', body: JSON.stringify({ id, action: 'unlock' }) }),
   deleteUser: (id: string) => api('users', { method: 'DELETE', body: JSON.stringify({ id }) }),
+  restoreUser: (id: string) => api('users', { method: 'PATCH', body: JSON.stringify({ id, action: 'restore' }) }),
   matchMessages: (matchId: string) => api(`messages?match_id=${matchId}`),
   reports: () => api('reports'),
   reportAction: (id: string, action: string, adminNote: string) => api('reports', { method: 'PATCH', body: JSON.stringify({ id, action, adminNote }) }),

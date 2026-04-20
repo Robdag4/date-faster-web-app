@@ -64,12 +64,12 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // List users
-  let query = supabase.from('users').select('id, phone_number, first_name, age, gender, preference, bio, job_title, tagline, photos, onboarding_complete, locked_at, credits_balance, created_at, deleted_at').order('created_at', { ascending: false });
+  // List users (include deleted for admin filtering)
+  let query = supabase.from('users').select('id, phone_number, first_name, age, gender, preference, bio, job_title, tagline, photos, onboarding_complete, locked_at, is_premium, credits_balance, created_at, deleted_at, photo_flagged').order('created_at', { ascending: false });
   if (search) {
     query = query.or(`first_name.ilike.%${search}%,phone_number.ilike.%${search}%`);
   }
-  const { data: users } = await query.limit(200);
+  const { data: users } = await query.limit(500);
   return NextResponse.json(users || []);
 }
 
@@ -87,6 +87,8 @@ export async function PATCH(req: NextRequest) {
     await supabase.from('users').update({ locked_at: new Date().toISOString() }).eq('id', id);
   } else if (action === 'unlock') {
     await supabase.from('users').update({ locked_at: null }).eq('id', id);
+  } else if (action === 'restore') {
+    await supabase.from('users').update({ deleted_at: null }).eq('id', id);
   }
 
   return NextResponse.json({ success: true });
