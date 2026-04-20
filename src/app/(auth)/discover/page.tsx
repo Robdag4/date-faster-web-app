@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/components/providers/auth-provider';
-import { DiscoveryCard } from '@/components/discovery/discovery-card';
+import { DiscoveryCard, DiscoveryCardHandle } from '@/components/discovery/discovery-card';
 import { EmptyState } from '@/components/discovery/empty-state';
 import { MatchModal } from '@/components/discovery/match-modal';
 import { SwipeButtons } from '@/components/discovery/swipe-buttons';
@@ -23,6 +23,7 @@ export default function DiscoverPage() {
   }>({ show: false });
   
   const [locationPrompt, setLocationPrompt] = useState(false);
+  const cardRef = useRef<DiscoveryCardHandle>(null);
 
   // Update location on mount
   useEffect(() => {
@@ -155,6 +156,7 @@ export default function DiscoverPage() {
               >
                 {index === 0 ? (
                   <DiscoveryCard 
+                    ref={cardRef}
                     profile={profile}
                     onSwipe={handleSwipe}
                     isInteractive
@@ -172,8 +174,8 @@ export default function DiscoverPage() {
       {hasMoreProfiles && currentProfile && (
         <div className="mt-6 pb-4">
           <SwipeButtons
-            onPass={() => handleSwipe('pass')}
-            onLike={() => handleSwipe('like')}
+            onPass={() => cardRef.current ? cardRef.current.flyOut('pass') : handleSwipe('pass')}
+            onLike={() => cardRef.current ? cardRef.current.flyOut('like') : handleSwipe('like')}
             onUndo={currentIndex > 0 ? handleUndoSwipe : undefined}
             disabled={!currentProfile}
           />
