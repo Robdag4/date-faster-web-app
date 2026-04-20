@@ -1,25 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2025-04-30.basil' as any });
+function getAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder',
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+}
+
 const PREMIUM_PRICE_ID = process.env.STRIPE_PREMIUM_PRICE_ID || 'price_1T9dUNK1RLJk3sxZxtTLL6B6';
 const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.datefaster.com';
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient();
-    const token = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (token) {
-      await supabase.auth.setSession({ access_token: token, refresh_token: '' });
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const admin = createAdminClient();
+    const admin = getAdmin();
+    const { data: { user: authUser }, error: authError } = await admin.auth.getUser(authHeader.slice(7));
+    if (authError || !authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { data: user } = await admin.from('users').select('id, phone_number, stripe_customer_id, is_premium').eq('id', authUser.id).single();
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
     if (user.is_premium) return NextResponse.json({ error: 'Already premium' }, { status: 400 });
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2025-04-30.basil' as any });
 
     let customerId = user.stripe_customer_id;
     if (!customerId) {
@@ -40,6 +49,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ checkoutUrl: session.url });
   } catch (err: any) {
     console.error('Premium checkout error:', err.message);
-    return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Failed to create checkout session' }, { status: 500 });
   }
 }

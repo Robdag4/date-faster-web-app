@@ -46,7 +46,12 @@ function PremiumContent() {
   const handleUpgrade = async () => {
     setProcessing(true);
     try {
-      const res = await fetch('/api/premium/checkout', { method: 'POST' });
+      const { supabase } = await import('@/lib/supabase');
+      const session = (await supabase.auth.getSession()).data.session;
+      const res = await fetch('/api/premium/checkout', {
+        method: 'POST',
+        headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {},
+      });
       const data = await res.json();
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
