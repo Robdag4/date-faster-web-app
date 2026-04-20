@@ -36,18 +36,9 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-md mx-auto">
-      {/* Cover Photo & Profile Picture */}
-      <div className="relative h-48 bg-slate-100">
-        {/* Edit button */}
-        <Link
-          href="/profile/edit"
-          className="absolute top-4 right-4 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-        >
-          <Edit className="w-5 h-5" />
-        </Link>
-
-        {/* Profile Picture */}
-        <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
+      {/* Profile Picture */}
+      <div className="flex justify-center pt-6 pb-2">
+        <Link href="/profile/edit" className="relative group">
           <div className="relative w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
             {user.photos?.[0] && !imageError ? (
               <Image
@@ -63,10 +54,13 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-        </div>
+          <div className="absolute bottom-1 right-1 w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center shadow-md">
+            <Edit className="w-4 h-4 text-white" />
+          </div>
+        </Link>
       </div>
 
-      <div className="px-4 pt-20 pb-4 space-y-6">
+      <div className="px-4 pb-4 space-y-6">
         {/* Basic Info */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-slate-900 mb-1">
