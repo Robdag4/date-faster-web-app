@@ -56,10 +56,10 @@ export const DiscoveryCard: React.FC<DiscoveryCardProps> = ({
       className="absolute inset-0 bg-white rounded-3xl shadow-xl overflow-hidden touch-none"
       drag={isInteractive ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={1}
+      dragElastic={0.7}
+      dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
       onDragEnd={handleDragEnd}
       style={{ x, rotate }}
-      whileDrag={{ scale: 1.02 }}
     >
       {/* Photo Section — fills top portion */}
       <div className="relative w-full" style={{ height: '65%' }} onClick={handlePhotoTap}>
