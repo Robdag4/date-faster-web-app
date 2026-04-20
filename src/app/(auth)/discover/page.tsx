@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/components/providers/auth-provider';
 import { DiscoveryCard } from '@/components/discovery/discovery-card';
 import { EmptyState } from '@/components/discovery/empty-state';
@@ -146,37 +146,24 @@ export default function DiscoverPage() {
           <EmptyState onRefresh={loadDiscoveryFeed} />
         ) : (
           <div className="relative h-full">
-            {/* Card Stack */}
-            <AnimatePresence>
-              {profiles.slice(currentIndex, currentIndex + 3).map((profile, index) => (
-                <motion.div
-                  key={`${profile.id}-${currentIndex + index}`}
-                  className="absolute inset-0"
-                  initial={{ scale: 0.95 - index * 0.05, y: index * 8 }}
-                  animate={{ 
-                    scale: 1 - index * 0.05, 
-                    y: index * 8,
-                    zIndex: 10 - index 
-                  }}
-                  exit={{ 
-                    x: 300,
-                    opacity: 0,
-                    transition: { duration: 0.3 }
-                  }}
-                  transition={{ duration: 0.2 }}
-                  style={{
-                    filter: index > 0 ? 'blur(1px)' : 'none',
-                    opacity: index > 2 ? 0 : 1 - index * 0.2,
-                  }}
-                >
+            {/* Card Stack — render up to 2 behind current */}
+            {profiles.slice(currentIndex, currentIndex + 2).map((profile, index) => (
+              <div
+                key={profile.id}
+                className="absolute inset-0"
+                style={{ zIndex: 10 - index }}
+              >
+                {index === 0 ? (
                   <DiscoveryCard 
                     profile={profile}
-                    onSwipe={index === 0 ? handleSwipe : undefined}
-                    isInteractive={index === 0}
+                    onSwipe={handleSwipe}
+                    isInteractive
                   />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                ) : (
+                  <div className="absolute inset-0 bg-white rounded-3xl shadow-lg overflow-hidden scale-[0.97] translate-y-2" />
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

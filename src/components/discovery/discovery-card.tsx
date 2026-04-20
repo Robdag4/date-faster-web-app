@@ -21,192 +21,143 @@ export const DiscoveryCard: React.FC<DiscoveryCardProps> = ({
   const [showDetails, setShowDetails] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   
-  // Motion values for swipe animation
   const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 0, 200], [-25, 0, 25]);
-  const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 0.5, 1, 0.5, 0]);
+  const rotate = useTransform(x, [-300, 0, 300], [-15, 0, 15]);
+  const likeOpacity = useTransform(x, [0, 80], [0, 1]);
+  const passOpacity = useTransform(x, [-80, 0], [1, 0]);
 
-  const handlePanEnd = (_: any, info: PanInfo) => {
+  const handleDragEnd = (_: any, info: PanInfo) => {
     if (!isInteractive || !onSwipe) return;
 
-    const swipeThreshold = 100;
-    const swipeVelocityThreshold = 500;
-
-    if (
-      info.offset.x > swipeThreshold || 
-      info.velocity.x > swipeVelocityThreshold
-    ) {
+    if (info.offset.x > 100 || info.velocity.x > 500) {
       onSwipe('like');
-    } else if (
-      info.offset.x < -swipeThreshold || 
-      info.velocity.x < -swipeVelocityThreshold
-    ) {
+    } else if (info.offset.x < -100 || info.velocity.x < -500) {
       onSwipe('pass');
-    } else {
-      // Snap back to center
-      x.set(0);
     }
   };
 
   const handlePhotoTap = (e: React.MouseEvent) => {
     if (!isInteractive) return;
-    
     const rect = cardRef.current?.getBoundingClientRect();
     if (!rect) return;
-
     const tapX = e.clientX - rect.left;
-    const cardWidth = rect.width;
-    
-    // Left half - previous photo, right half - next photo
-    if (tapX < cardWidth / 2) {
+    if (tapX < rect.width / 2) {
       setCurrentPhotoIndex((prev) => Math.max(0, prev - 1));
     } else {
-      setCurrentPhotoIndex((prev) => 
-        Math.min(profile.photos.length - 1, prev + 1)
-      );
+      setCurrentPhotoIndex((prev) => Math.min(profile.photos.length - 1, prev + 1));
     }
   };
 
-  const calculateAge = (age: number): string => {
-    return age.toString();
-  };
+  const validPhotos = profile.photos?.filter(Boolean) || [];
 
   return (
     <motion.div
       ref={cardRef}
-      className="relative w-full h-full bg-white rounded-3xl shadow-lg overflow-hidden cursor-grab active:cursor-grabbing"
+      className="absolute inset-0 bg-white rounded-3xl shadow-xl overflow-hidden touch-none"
       drag={isInteractive ? 'x' : false}
-      dragConstraints={{ left: -200, right: 200 }}
-      dragElastic={0.2}
-      onPanEnd={handlePanEnd}
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={1}
+      onDragEnd={handleDragEnd}
       style={{ x, rotate }}
-      whileTap={isInteractive ? { scale: 0.98 } : undefined}
+      whileDrag={{ scale: 1.02 }}
     >
-      {/* Photo Section */}
-      <div className="relative h-3/5 overflow-hidden" onClick={handlePhotoTap}>
-        <Image
-          src={profile.photos[currentPhotoIndex] || '/placeholder-avatar.jpg'}
-          alt={profile.first_name}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, 400px"
-        />
+      {/* Photo Section — fills top portion */}
+      <div className="relative w-full" style={{ height: '65%' }} onClick={handlePhotoTap}>
+        {validPhotos.length > 0 ? (
+          <Image
+            src={validPhotos[currentPhotoIndex] || '/placeholder-avatar.jpg'}
+            alt={profile.first_name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 400px"
+            unoptimized
+          />
+        ) : (
+          <div className="w-full h-full bg-slate-200 flex items-center justify-center">
+            <span className="text-4xl">👤</span>
+          </div>
+        )}
         
-        {/* Photo dots indicator */}
-        {profile.photos.length > 1 && (
-          <div className="absolute top-4 left-4 flex space-x-1">
-            {profile.photos.map((_, index) => (
+        {/* Photo dots */}
+        {validPhotos.length > 1 && (
+          <div className="absolute top-3 inset-x-3 flex gap-1">
+            {validPhotos.map((_, index) => (
               <div
                 key={index}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentPhotoIndex 
-                    ? 'bg-white' 
-                    : 'bg-white/50'
+                className={`flex-1 h-1 rounded-full transition-colors ${
+                  index === currentPhotoIndex ? 'bg-white' : 'bg-white/40'
                 }`}
               />
             ))}
           </div>
         )}
 
-        {/* Swipe indicators */}
+        {/* LIKE indicator */}
         <motion.div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          style={{ opacity }}
+          className="absolute top-8 left-6 border-4 border-green-500 rounded-lg px-4 py-1 pointer-events-none"
+          style={{ opacity: likeOpacity, rotate: -20 }}
         >
-          <motion.div
-            className="text-white font-bold text-6xl"
-            style={{
-              opacity: useTransform(x, [-200, -50], [1, 0]),
-            }}
-          >
-            <div className="bg-red-500 p-4 rounded-full">
-              <X className="w-12 h-12" />
-            </div>
-          </motion.div>
-          <motion.div
-            className="text-white font-bold text-6xl"
-            style={{
-              opacity: useTransform(x, [50, 200], [0, 1]),
-            }}
-          >
-            <div className="bg-green-500 p-4 rounded-full">
-              <Heart className="w-12 h-12 fill-current" />
-            </div>
-          </motion.div>
+          <span className="text-green-500 font-black text-3xl tracking-wider">LIKE</span>
+        </motion.div>
+
+        {/* NOPE indicator */}
+        <motion.div
+          className="absolute top-8 right-6 border-4 border-red-500 rounded-lg px-4 py-1 pointer-events-none"
+          style={{ opacity: passOpacity, rotate: 20 }}
+        >
+          <span className="text-red-500 font-black text-3xl tracking-wider">NOPE</span>
         </motion.div>
       </div>
 
-      {/* Profile Info Section */}
-      <div className="h-2/5 p-6 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-2xl font-bold text-slate-900">
-              {profile.first_name}, {calculateAge(profile.age)}
-            </h2>
-            <button
-              onClick={() => setShowDetails(!showDetails)}
-              className="p-2 rounded-full hover:bg-slate-100 transition-colors"
-            >
-              <Info className="w-5 h-5 text-slate-600" />
-            </button>
-          </div>
-
-          {profile.job_title && (
-            <div className="flex items-center text-slate-600 mb-2">
-              <Briefcase className="w-4 h-4 mr-2" />
-              <span className="text-sm">{profile.job_title}</span>
-            </div>
-          )}
-
-          <div className="flex items-center text-slate-600 mb-3">
-            <MapPin className="w-4 h-4 mr-2" />
-            <span className="text-sm">{profile.distance != null ? `${profile.distance} miles away` : 'Distance unknown'}</span>
-          </div>
-
-          {showDetails ? (
-            <div className="space-y-3">
-              {profile.bio && (
-                <div>
-                  <p className="text-sm text-slate-700">{profile.bio}</p>
-                </div>
-              )}
-              
-              {profile.interests.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-slate-900 mb-1">Interests</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {profile.interests.slice(0, 6).map((interest, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full"
-                      >
-                        {interest}
-                      </span>
-                    ))}
-                    {profile.interests.length > 6 && (
-                      <span className="px-2 py-1 bg-slate-100 text-slate-500 text-xs rounded-full">
-                        +{profile.interests.length - 6} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {profile.ideal_date && (
-                <div>
-                  <h4 className="text-sm font-medium text-slate-900 mb-1">Ideal Date</h4>
-                  <p className="text-sm text-slate-700">{profile.ideal_date}</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            profile.tagline && (
-              <p className="text-slate-600 text-sm leading-relaxed line-clamp-2">
-                {profile.tagline}
-              </p>
-            )
-          )}
+      {/* Info Section */}
+      <div className="p-5 flex flex-col" style={{ height: '35%' }}>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-2xl font-bold text-slate-900">
+            {profile.first_name}, {profile.age}
+          </h2>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowDetails(!showDetails); }}
+            className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+          >
+            <Info className="w-5 h-5 text-slate-400" />
+          </button>
         </div>
+
+        {profile.job_title && (
+          <div className="flex items-center text-slate-500 mb-1">
+            <Briefcase className="w-4 h-4 mr-2 shrink-0" />
+            <span className="text-sm truncate">{profile.job_title}</span>
+          </div>
+        )}
+
+        <div className="flex items-center text-slate-500 mb-2">
+          <MapPin className="w-4 h-4 mr-2 shrink-0" />
+          <span className="text-sm">
+            {profile.distance != null ? `${profile.distance} miles away` : 'Distance unknown'}
+          </span>
+        </div>
+
+        {showDetails ? (
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {profile.bio && <p className="text-sm text-slate-600">{profile.bio}</p>}
+            {profile.interests?.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {profile.interests.slice(0, 6).map((interest, i) => (
+                  <span key={i} className="px-2 py-0.5 bg-rose-50 text-rose-600 text-xs rounded-full">
+                    {interest}
+                  </span>
+                ))}
+              </div>
+            )}
+            {profile.ideal_date && (
+              <p className="text-sm text-slate-600">💡 {profile.ideal_date}</p>
+            )}
+          </div>
+        ) : (
+          profile.tagline && (
+            <p className="text-slate-500 text-sm line-clamp-2">{profile.tagline}</p>
+          )
+        )}
       </div>
     </motion.div>
   );
