@@ -42,19 +42,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
       if (!data) {
-        // Auth user exists but no profile row — create a skeleton row
-        // so onboarding can proceed
-        console.log('No profile row for user, creating skeleton...');
-        const { data: newRow, error: insertErr } = await supabase
-          .from('users')
-          .insert({ id: userId, first_name: '', age: 0, onboarding_complete: false })
-          .select('*')
-          .single();
-        if (insertErr) {
-          console.error('Failed to create skeleton profile:', insertErr.message);
-          return null;
+        // Auth user exists but no profile row (or RLS blocks it).
+        // Try creating via server-side API which uses service role key.
+        console.log('No profile row found, creating via API...');
+        try {
+          const res = await fetch('/api/auth/ensure-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }),
+          });
+          if (res.ok) {
+            // Re-fetch with client (now RLS should work since row exists with correct id)
+            const { data: retryData } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', userId)
+              .is('deleted_at', null)
+              .maybeSingle();
+            return retryData as AppUser | null;
+          }
+        } catch (e) {
+          console.error('ensure-profile failed:', e);
         }
-        return newRow as AppUser;
+        return null;
       }
       return data as AppUser;
     } catch (error) {
