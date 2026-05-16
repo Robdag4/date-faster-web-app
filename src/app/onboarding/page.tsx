@@ -342,14 +342,25 @@ export default function OnboardingPage() {
     };
 
     try {
-      // 1. Get user ID
+      // 1. Get user ID (with timeout)
       let userId: string | null = user?.id || null;
       if (!userId) {
         try {
-          const { data: { user: authUser } } = await supabase.auth.getUser();
+          const getUserPromise = supabase.auth.getUser();
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+          const { data: { user: authUser } } = await Promise.race([getUserPromise, timeoutPromise]) as any;
           userId = authUser?.id || null;
         } catch (e) {
           console.error('getUser failed:', e);
+        }
+      }
+      // Last resort: try getSession (cached, instant)
+      if (!userId) {
+        try {
+          const { data: { session: s } } = await supabase.auth.getSession();
+          userId = s?.user?.id || null;
+        } catch (e) {
+          console.error('getSession failed:', e);
         }
       }
       if (!userId) {
@@ -393,12 +404,14 @@ export default function OnboardingPage() {
       isRedirecting.current = true;
 
       // 3. Check into mixer
-      let accessToken = '';
-      try {
-        const { data: { session: authSession } } = await supabase.auth.getSession();
-        accessToken = authSession?.access_token || '';
-      } catch (e) {
-        console.error('getSession failed:', e);
+      let accessToken = session?.access_token || '';
+      if (!accessToken) {
+        try {
+          const { data: { session: authSession } } = await supabase.auth.getSession();
+          accessToken = authSession?.access_token || '';
+        } catch (e) {
+          console.error('getSession failed:', e);
+        }
       }
 
       const checkinRes = await timeoutFetch('/api/mixer/checkin', {
