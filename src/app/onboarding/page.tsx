@@ -565,17 +565,17 @@ export default function OnboardingPage() {
       {/* Text input */}
       {!['location', 'done', 'photos', 'interests', 'relationship_goal', 'gender', 'sexuality'].includes(step) && !showEventCode && (
         <div className="px-4 py-3 bg-white border-t border-slate-200 shrink-0 pb-safe space-y-2">
-          <div className="flex items-end gap-2">
+          <div className="flex items-center gap-2 w-full">
             <input
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
               placeholder="Type your answer..."
-              className="flex-1 rounded-full px-4 py-2.5 outline-none text-[15px] bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
+              className="flex-1 min-w-0 rounded-full px-4 py-2.5 outline-none text-[15px] bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
             />
             <button onClick={() => handleSend()}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold gradient-bg">
+              className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white font-bold gradient-bg">
               →
             </button>
           </div>
