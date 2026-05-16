@@ -62,16 +62,23 @@ export const auth = {
       password,
     });
 
-    if (error && (error.message.includes('Invalid login') || error.message.includes('invalid'))) {
-      // User doesn't exist — sign up
+    if (error) {
+      // Sign in failed — try sign up
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         phone: phoneNumber,
         password,
       });
-      handleSupabaseError(signUpError);
+
+      if (signUpError) {
+        // Sign up also failed (e.g. "User already registered" with wrong password)
+        // This means user exists but password doesn't match — could be from old OTP flow
+        // Try to sign in with OTP as fallback, or throw a helpful error
+        throw new ApiError(
+          'Account exists but could not sign in. Please contact support.',
+          401
+        );
+      }
       data = signUpData;
-    } else {
-      handleSupabaseError(error);
     }
 
     if (!data?.user) {
