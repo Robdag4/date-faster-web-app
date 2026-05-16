@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/auth-provider';
 import { DiscoveryCard, DiscoveryCardHandle } from '@/components/discovery/discovery-card';
 import { EmptyState } from '@/components/discovery/empty-state';
@@ -14,9 +15,11 @@ import toast from 'react-hot-toast';
 
 export default function DiscoverPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [profiles, setProfiles] = useState<DiscoveryProfile[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [activeEvent, setActiveEvent] = useState<any>(null);
   const [matchModal, setMatchModal] = useState<{
     show: boolean;
     profile?: DiscoveryProfile;
@@ -51,6 +54,28 @@ export default function DiscoverPage() {
       }
     };
     updateLocation();
+  }, [user]);
+
+  // Check for active mixer event
+  useEffect(() => {
+    if (!user) return;
+    const checkEvent = async () => {
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const res = await fetch('/api/events/mixer/statements', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.eventId && ['active', 'checkin', 'draft'].includes(data.eventStatus)) {
+            setActiveEvent(data);
+          }
+        }
+      } catch (e) { console.error('Error checking active event:', e); }
+    };
+    checkEvent();
   }, [user]);
 
   const handleLocationPermission = async () => {
@@ -169,6 +194,22 @@ export default function DiscoverPage() {
 
   return (
     <div className="max-w-md mx-auto p-4 h-full flex flex-col">
+      {/* Active Event Banner */}
+      {activeEvent && (
+        <button onClick={() => router.push('/events/mixer')}
+          className="mb-3 w-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg text-left">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium opacity-90">🎭 You're checked into a mixer!</p>
+              <p className="text-lg font-bold">
+                {activeEvent.eventStatus === 'active' ? '🟢 Game is LIVE — Tap to play!' : '⏳ Waiting for host to start...'}
+              </p>
+            </div>
+            <span className="text-2xl">→</span>
+          </div>
+        </button>
+      )}
+
       {/* Location Prompt */}
       {locationPrompt && (
         <div className="mb-3 bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center justify-between">
