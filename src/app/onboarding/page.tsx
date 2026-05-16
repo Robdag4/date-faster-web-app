@@ -324,8 +324,8 @@ export default function OnboardingPage() {
     if (!code) { setEventCodeError('Enter your event code'); return; }
     setEventCodeError('');
     
-    if (code.length < 3) {
-      setEventCodeError('Invalid event code');
+    if (code.length !== 4) {
+      setEventCodeError('Event code must be 4 characters');
       return;
     }
 
@@ -533,6 +533,7 @@ export default function OnboardingPage() {
             value={eventCodeInput}
             onChange={e => setEventCodeInput(e.target.value.toUpperCase())}
             placeholder="EVENT CODE"
+            maxLength={4}
             className="w-full px-4 py-3 rounded-xl text-center text-lg font-bold tracking-widest outline-none bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
             onKeyDown={e => e.key === 'Enter' && handleEventCodeBypass()}
           />
