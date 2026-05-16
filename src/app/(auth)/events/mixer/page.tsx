@@ -241,9 +241,9 @@ export default function MixerPage() {
         });
         
         if (data.correct) {
-          toast.success('Correct! You found the lie!');
+          toast.success('🎉 You guessed the lie!');
         } else {
-          toast.error('Incorrect. Better luck next time!');
+          toast.error(`Ask ${currentTarget.firstName} which one it is!`);
         }
         
         setTimeout(() => {
@@ -525,23 +525,26 @@ export default function MixerPage() {
                     lastGuessResult.correct ? 'bg-green-50' : 'bg-red-50'
                   }`}>
                     {lastGuessResult.correct ? (
-                      <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                      <>
+                        <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                        <h3 className="font-medium text-lg text-green-900">
+                          🎉 You guessed the lie!
+                        </h3>
+                        <p className="text-sm mt-1 text-green-700">
+                          Statement {lastGuessResult.lieIndex} was the lie
+                        </p>
+                      </>
                     ) : (
-                      <XCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
+                      <>
+                        <XCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
+                        <h3 className="font-medium text-lg text-red-900">
+                          Incorrect!
+                        </h3>
+                        <p className="text-sm mt-1 text-red-700">
+                          Ask {currentTarget?.firstName} which one is the lie 😏
+                        </p>
+                      </>
                     )}
-                    <h3 className={`font-medium text-lg ${
-                      lastGuessResult.correct ? 'text-green-900' : 'text-red-900'
-                    }`}>
-                      {lastGuessResult.correct ? '🎉 Correct!' : '❌ Wrong!'}
-                    </h3>
-                    <p className={`text-sm mt-1 ${
-                      lastGuessResult.correct ? 'text-green-700' : 'text-red-700'
-                    }`}>
-                      The lie was Statement {lastGuessResult.lieIndex}
-                      {currentTarget?.statements && (
-                        <>: "{currentTarget.statements.find(s => s.index === lastGuessResult.lieIndex)?.text}"</>
-                      )}
-                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3 mb-6">
