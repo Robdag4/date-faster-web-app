@@ -57,8 +57,8 @@ export default function OnboardingPage() {
   }, []);
 
   useEffect(() => {
-    // Don't interfere if we're already handling a redirect (e.g. event code bypass)
-    if (isRedirecting.current) return;
+    // Don't interfere if we're mid-redirect (event code bypass) or already done
+    if (isRedirecting.current || step === 'done') return;
     
     // Still loading and haven't timed out — wait
     if (authLoading && !timedOut) return;
@@ -71,8 +71,7 @@ export default function OnboardingPage() {
       router.replace('/discover');
       return;
     }
-    // session exists (user may be null or onboarding incomplete) — show onboarding UI
-  }, [user, session, authLoading, timedOut, router]);
+  }, [user, session, authLoading, timedOut, router, step]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -370,10 +369,10 @@ export default function OnboardingPage() {
         add('bot', `Something went wrong saving your profile. Try again! 🔄`);
         return;
       }
-      // Set flag so the guard doesn't redirect while we finish checkin
+      // Don't refresh user state here — it triggers the onboarding guard
+      // which redirects to /discover before we can navigate to /events/mixer.
+      // The auth layout only checks session (not onboarding_complete), so we're fine.
       isRedirecting.current = true;
-      // Refresh user state so auth layout will let us into /events/mixer
-      await refreshUser();
     } catch (err: any) {
       add('bot', `Something went wrong saving your profile: ${err.message}. Try again! 🔄`);
       return;
