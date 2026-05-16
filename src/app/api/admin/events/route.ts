@@ -12,10 +12,9 @@ function checkAuth(req: NextRequest) {
   return null;
 }
 
-function generateCode(len = 6) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function generateCode(len = 4) {
   let code = '';
-  for (let i = 0; i < len; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < len; i++) code += Math.floor(Math.random() * 10).toString();
   return code;
 }
 

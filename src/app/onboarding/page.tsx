@@ -600,8 +600,8 @@ export default function OnboardingPage() {
               className="flex-1 min-w-0 rounded-full px-4 py-2.5 outline-none text-[15px] bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
             />
             <button onClick={() => handleSend()}
-              className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-white font-bold gradient-bg text-lg">
-              →
+              className="shrink-0 px-4 py-2.5 rounded-full text-white font-semibold text-[15px] gradient-bg">
+              Send
             </button>
           </div>
           {!['name', 'age'].includes(step) && (
