@@ -59,22 +59,36 @@ export default function OnboardingPage() {
     }
   }, [user, session, router]);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Resize container to visual viewport (handles iOS keyboard)
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const update = () => {
+      if (containerRef.current) {
+        containerRef.current.style.height = `${vv.height}px`;
+        containerRef.current.style.top = `${vv.offsetTop}px`;
+      }
+      // Keep messages scrolled to bottom
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
+    };
+
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Scroll input into view when keyboard opens
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const handleFocus = () => {
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 300);
-    };
-    const el = inputRef.current;
-    el?.addEventListener('focus', handleFocus);
-    return () => el?.removeEventListener('focus', handleFocus);
-  }, []);
 
   const add = (role: 'bot' | 'user', text: string) => {
     setMessages(prev => [...prev, { id: String(Date.now() + Math.random()), role, text }]);
@@ -398,7 +412,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex flex-col bg-cream-50" style={{ height: '100dvh', overflow: 'hidden' }}>
+    <div ref={containerRef} className="fixed left-0 right-0 flex flex-col bg-cream-50" style={{ height: '100dvh', top: 0, overflow: 'hidden' }}>
       <div className="px-4 py-3 text-center bg-white border-b border-slate-200 shrink-0">
         <h2 className="font-bold text-lg text-slate-900">🤖 Date Faster Setup</h2>
       </div>
