@@ -30,7 +30,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await getUserFromToken(req);
   if (!user) return unauthorized();
-  const { statement1, statement2, statement3, lieIndex } = await req.json();
+  const body = await req.json();
+  const { statement1, statement2, statement3 } = body;
+  const lieIndex = body.lieIndex ?? body.lie_index;
   if (!statement1 || !statement2 || !statement3 || !lieIndex) return badRequest('statement1, statement2, statement3, and lieIndex required');
   if (lieIndex < 1 || lieIndex > 3) return badRequest('lieIndex must be 1, 2, or 3');
 
