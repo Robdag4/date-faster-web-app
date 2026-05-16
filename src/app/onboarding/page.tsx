@@ -44,6 +44,7 @@ export default function OnboardingPage() {
   const [showEventCode, setShowEventCode] = useState(false);
   const [eventCodeInput, setEventCodeInput] = useState('');
   const [eventCodeError, setEventCodeError] = useState('');
+  const [eventCodeLoading, setEventCodeLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const isRedirecting = useRef(false);
@@ -320,7 +321,8 @@ export default function OnboardingPage() {
   };
 
   const handleEventCodeBypass = async () => {
-    const code = eventCodeInput.trim().toUpperCase();
+    if (eventCodeLoading) return; // prevent double-clicks
+    const code = eventCodeInput.trim();
     if (!code) { setEventCodeError('Enter your event code'); return; }
     setEventCodeError('');
     
@@ -329,19 +331,36 @@ export default function OnboardingPage() {
       return;
     }
 
+    setEventCodeLoading(true);
     add('user', `🎟️ Event code: ${code}`);
     add('bot', "Verifying event code...");
 
-    // Save profile via server-side API (bypasses RLS)
+    const timeoutFetch = (url: string, opts: any, ms = 15000) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), ms);
+      return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timer));
+    };
+
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      const userId = user?.id || authUser?.id;
+      // 1. Get user ID
+      let userId: string | null = user?.id || null;
       if (!userId) {
-        add('bot', "Something went wrong — can't find your account. Try refreshing! 🔄");
+        try {
+          const { data: { user: authUser } } = await supabase.auth.getUser();
+          userId = authUser?.id || null;
+        } catch (e) {
+          console.error('getUser failed:', e);
+        }
+      }
+      if (!userId) {
+        add('bot', "Can't find your account. Try refreshing the page! 🔄");
+        setEventCodeLoading(false);
         return;
       }
+
+      // 2. Save profile
       const bio = buildBio(profile);
-      const res = await fetch('/api/onboarding/complete', {
+      const saveRes = await timeoutFetch('/api/onboarding/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -363,37 +382,37 @@ export default function OnboardingPage() {
         }),
       });
       
-      if (!res.ok) {
-        const data = await res.json();
+      if (!saveRes.ok) {
+        const data = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Profile save error:', data.error);
-        add('bot', `Something went wrong saving your profile. Try again! 🔄`);
+        add('bot', `Couldn't save profile: ${data.error || 'Unknown error'}. Try again! 🔄`);
+        setEventCodeLoading(false);
         return;
       }
-      // Don't refresh user state here — it triggers the onboarding guard
-      // which redirects to /discover before we can navigate to /events/mixer.
-      // The auth layout only checks session (not onboarding_complete), so we're fine.
-      isRedirecting.current = true;
-    } catch (err: any) {
-      add('bot', `Something went wrong saving your profile: ${err.message}. Try again! 🔄`);
-      return;
-    }
 
-    // Check into the mixer event
-    try {
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      const res = await fetch('/api/mixer/checkin', {
+      isRedirecting.current = true;
+
+      // 3. Check into mixer
+      let accessToken = '';
+      try {
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        accessToken = authSession?.access_token || '';
+      } catch (e) {
+        console.error('getSession failed:', e);
+      }
+
+      const checkinRes = await timeoutFetch('/api/mixer/checkin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : {}),
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({ eventCode: code }),
       });
-      const data = await res.json();
 
-      if (!res.ok && res.status !== 409) {
-        // 409 = already checked in, that's fine
-        add('bot', `Event code not found or check-in closed. You can still use the app! 🎯`);
+      if (!checkinRes.ok && checkinRes.status !== 409) {
+        const data = await checkinRes.json().catch(() => ({ error: 'Unknown error' }));
+        add('bot', `Event code not found or check-in closed: ${data.error || ''}. You can still use the app! 🎯`);
         setStep('done');
         setTimeout(() => router.replace('/discover'), 1500);
         return;
@@ -401,13 +420,14 @@ export default function OnboardingPage() {
 
       add('bot', "You're checked in! 🎉 Let's set up your Two Truths and a Lie...");
       setStep('done');
-      setTimeout(() => {
-        router.replace('/events/mixer');
-      }, 1000);
+      setTimeout(() => router.replace('/events/mixer'), 1000);
     } catch (err: any) {
-      add('bot', "Couldn't verify event code, but your profile is saved! Taking you to the app...");
-      setStep('done');
-      setTimeout(() => router.replace('/discover'), 1500);
+      console.error('Event code bypass error:', err);
+      const msg = err.name === 'AbortError' ? 'Request timed out' : (err.message || 'Unknown error');
+      add('bot', `Something went wrong: ${msg}. Try again! 🔄`);
+      isRedirecting.current = false;
+    } finally {
+      setEventCodeLoading(false);
     }
   };
 
@@ -546,8 +566,9 @@ export default function OnboardingPage() {
               ← Back
             </button>
             <button onClick={handleEventCodeBypass}
-              className="flex-1 py-3 rounded-xl text-white font-semibold text-sm bg-rose-500">
-              Verify & Skip →
+              disabled={eventCodeLoading}
+              className="flex-1 py-3 rounded-xl text-white font-semibold text-sm bg-rose-500 disabled:opacity-50">
+              {eventCodeLoading ? 'Verifying...' : 'Verify & Skip →'}
             </button>
           </div>
         </div>
