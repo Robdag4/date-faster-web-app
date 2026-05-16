@@ -46,6 +46,7 @@ export default function OnboardingPage() {
   const [eventCodeError, setEventCodeError] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const isRedirecting = useRef(false);
 
   const [timedOut, setTimedOut] = useState(false);
 
@@ -56,6 +57,9 @@ export default function OnboardingPage() {
   }, []);
 
   useEffect(() => {
+    // Don't interfere if we're already handling a redirect (e.g. event code bypass)
+    if (isRedirecting.current) return;
+    
     // Still loading and haven't timed out — wait
     if (authLoading && !timedOut) return;
 
@@ -359,8 +363,10 @@ export default function OnboardingPage() {
         add('bot', `Something went wrong saving your profile. Try again! 🔄`);
         return;
       }
-      // Don't call refreshUser() here — it would trigger the guard
-      // and redirect to /discover before we finish the mixer checkin
+      // Set flag so the guard doesn't redirect while we finish checkin
+      isRedirecting.current = true;
+      // Refresh user state so auth layout will let us into /events/mixer
+      await refreshUser();
     } catch (err: any) {
       add('bot', `Something went wrong saving your profile: ${err.message}. Try again! 🔄`);
       return;
