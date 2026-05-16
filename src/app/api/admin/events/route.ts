@@ -137,7 +137,6 @@ export async function POST(req: NextRequest) {
       .from('speed_events')
       .select('id')
       .eq('event_code', candidate)
-      .in('status', ['draft', 'checkin', 'active'])
       .limit(1);
     if (!existing || existing.length === 0) {
       event_code = candidate;
