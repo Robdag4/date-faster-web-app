@@ -324,8 +324,8 @@ export default function OnboardingPage() {
     if (!code) { setEventCodeError('Enter your event code'); return; }
     setEventCodeError('');
     
-    if (code.length !== 4) {
-      setEventCodeError('Event code must be 4 characters');
+    if (code.length !== 4 || !/^\d{4}$/.test(code)) {
+      setEventCodeError('Event code must be 4 digits');
       return;
     }
 
@@ -531,9 +531,11 @@ export default function OnboardingPage() {
           <p className="text-sm text-center text-slate-600">Enter your event code to skip the rest</p>
           <input
             value={eventCodeInput}
-            onChange={e => setEventCodeInput(e.target.value.toUpperCase())}
-            placeholder="EVENT CODE"
+            onChange={e => setEventCodeInput(e.target.value.replace(/\D/g, ''))}
+            placeholder="1234"
             maxLength={4}
+            inputMode="numeric"
+            pattern="[0-9]*"
             className="w-full px-4 py-3 rounded-xl text-center text-lg font-bold tracking-widest outline-none bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
             onKeyDown={e => e.key === 'Enter' && handleEventCodeBypass()}
           />

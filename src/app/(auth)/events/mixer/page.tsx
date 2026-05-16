@@ -313,9 +313,11 @@ export default function MixerPage() {
           <div className="space-y-4">
             <input
               type="text"
-              placeholder="Enter 4-digit event code"
+              placeholder="1234"
               value={eventCode}
-              onChange={(e) => setEventCode(e.target.value.toUpperCase())}
+              onChange={(e) => setEventCode(e.target.value.replace(/\D/g, ''))}
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="w-full px-4 py-3 border border-slate-200 rounded-lg text-center text-lg font-mono tracking-widest"
               maxLength={4}
             />
