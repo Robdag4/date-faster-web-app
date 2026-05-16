@@ -331,8 +331,14 @@ export default function OnboardingPage() {
 
     // Save profile and complete onboarding first
     try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const userId = user?.id || authUser?.id;
+      if (!userId) {
+        add('bot', "Something went wrong — can't find your account. Try refreshing! 🔄");
+        return;
+      }
       const bio = buildBio(profile);
-      await supabase.from('users').update({
+      const { error: updateErr } = await supabase.from('users').update({
         first_name: profile.first_name,
         age: profile.age,
         date_of_birth: profile.date_of_birth,
@@ -346,9 +352,15 @@ export default function OnboardingPage() {
         ideal_date: profile.ideal_date,
         relationship_goal: profile.relationship_goal,
         onboarding_complete: true,
-      }).eq('id', user?.id);
+      }).eq('id', userId);
       
-      await refreshUser();
+      if (updateErr) {
+        console.error('Profile update error:', updateErr);
+        add('bot', `Something went wrong saving your profile. Try again! 🔄`);
+        return;
+      }
+      // Don't call refreshUser() here — it would trigger the guard
+      // and redirect to /discover before we finish the mixer checkin
     } catch (err: any) {
       add('bot', `Something went wrong saving your profile: ${err.message}. Try again! 🔄`);
       return;
