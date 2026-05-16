@@ -95,6 +95,9 @@ export default function MixerPage() {
 
   useEffect(() => {
     checkMixerStatus();
+    // Poll every 5 seconds for status changes (host starting game, etc.)
+    const interval = setInterval(checkMixerStatus, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const checkMixerStatus = async () => {
