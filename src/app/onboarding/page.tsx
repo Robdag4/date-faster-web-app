@@ -28,7 +28,7 @@ function buildBio(profile: { tagline: string; job_title: string; interests: stri
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, session, refreshUser } = useAuth();
+  const { user, session, loading: authLoading, refreshUser } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([
     { id: '1', role: 'bot', text: "Hey! 👋 I'm your Date Faster assistant. Let's build your profile. What's your first name?" },
   ]);
@@ -48,6 +48,8 @@ export default function OnboardingPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Wait for auth to finish loading before checking
+    if (authLoading) return;
     // Redirect if user is not authenticated or already completed onboarding
     if (!user && !session) {
       router.push('/');
@@ -57,7 +59,7 @@ export default function OnboardingPage() {
       router.push('/discover');
       return;
     }
-  }, [user, session, router]);
+  }, [user, session, authLoading, router]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
