@@ -27,12 +27,6 @@ export const CodeStep: React.FC<CodeStepProps> = ({
   const { refreshUser } = useAuth();
   const router = useRouter();
 
-  // Auto-verify immediately (SMS bypassed)
-  useEffect(() => {
-    handleSubmit('000000');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Start resend cooldown
   useEffect(() => {
     setResendCooldown(30);

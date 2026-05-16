@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Smartphone, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/components/providers/auth-provider';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 interface PhoneStepProps {
@@ -13,6 +15,8 @@ interface PhoneStepProps {
 export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
+  const { refreshUser } = useAuth();
+  const router = useRouter();
 
   const normalizePhone = (phoneNumber: string): string => {
     // Remove all non-digit characters
@@ -58,13 +62,18 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
 
     try {
       const normalizedPhone = normalizePhone(phone);
-      await api.auth.sendCode(normalizedPhone);
-      
-      toast.success('Verification code sent!');
-      onSuccess(normalizedPhone);
+      // Sign in/up directly — skip SMS verification
+      const result = await api.auth.verifyCode(normalizedPhone, '000000');
+      await refreshUser();
+      toast.success('Welcome to Date Faster!');
+      if (result.isNew || !result.onboardingComplete) {
+        router.push('/onboarding');
+      } else {
+        router.push('/discover');
+      }
     } catch (error: any) {
-      console.error('Send code error:', error);
-      toast.error(error.message || 'Failed to send verification code');
+      console.error('Auth error:', error);
+      toast.error(error.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -84,7 +93,7 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
           Enter your phone number
         </h2>
         <p className="text-slate-600">
-          We'll send you a verification code to get started
+          Enter your phone number to get started
         </p>
       </div>
 
@@ -121,7 +130,7 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
             </>
           ) : (
             <>
-              <span>Send verification code</span>
+              <span>Continue</span>
               <ArrowRight className="w-5 h-5" />
             </>
           )}
@@ -130,8 +139,7 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-slate-500">
-          By providing your phone number, you consent to receive SMS messages 
-          from Date Faster for verification and account security purposes.
+          Your phone number is used to create your account and won't be shared.
         </p>
       </div>
     </motion.div>
