@@ -53,73 +53,31 @@ export const auth = {
     isNew: boolean; 
     onboardingComplete: boolean 
   }> => {
-    // Use phone+password auth (password = phone number for now)
-    const password = phoneNumber + '_df2026';
-
-    // Try sign in first
-    let { data, error } = await supabase.auth.signInWithPassword({
-      phone: phoneNumber,
-      password,
+    // Call server-side API that handles auth via admin client
+    const res = await fetch('/api/auth/phone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber }),
     });
 
-    if (error) {
-      // Sign in failed — try sign up
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        phone: phoneNumber,
-        password,
+    const data = await res.json();
+    if (!res.ok) {
+      throw new ApiError(data.error || 'Authentication failed', res.status);
+    }
+
+    // Set the session in supabase client
+    if (data.token && data.refreshToken) {
+      await supabase.auth.setSession({
+        access_token: data.token,
+        refresh_token: data.refreshToken,
       });
-
-      if (signUpError) {
-        // Sign up also failed (e.g. "User already registered" with wrong password)
-        // This means user exists but password doesn't match — could be from old OTP flow
-        // Try to sign in with OTP as fallback, or throw a helpful error
-        throw new ApiError(
-          'Account exists but could not sign in. Please contact support.',
-          401
-        );
-      }
-      data = signUpData;
-    }
-
-    if (!data?.user) {
-      throw new ApiError('Authentication failed', 401);
-    }
-
-    // Check if user exists in our users table
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-
-    let isNew = false;
-    let onboardingComplete = false;
-
-    if (userError && userError.code === 'PGRST116') {
-      // User doesn't exist, create new user record
-      const { error: createError } = await supabase
-        .from('users')
-        .insert([
-          {
-            id: data.user.id,
-            phone_number: phoneNumber,
-            first_name: '',
-            age: 0,
-          },
-        ]);
-
-      handleSupabaseError(createError);
-      isNew = true;
-    } else {
-      handleSupabaseError(userError);
-      onboardingComplete = userData?.onboarding_complete || false;
     }
 
     return {
-      token: data.session?.access_token || '',
-      userId: data.user.id,
-      isNew,
-      onboardingComplete,
+      token: data.token,
+      userId: data.userId,
+      isNew: data.isNew,
+      onboardingComplete: data.onboardingComplete,
     };
   },
 
