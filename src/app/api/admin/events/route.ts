@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
   const type = body.type; // 'speed' or 'mixer'
 
   const id = uuid();
-  const event_code = generateCode();
+  const event_code = generateCode(4);
   const host_username = 'host_' + generateCode(4).toLowerCase();
 
   if (type === 'mixer') {
