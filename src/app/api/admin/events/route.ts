@@ -26,9 +26,9 @@ export async function GET(req: NextRequest) {
 
   if (type === 'mixer') {
     if (id) {
-      const { data: event } = await supabase.from('mixer_events').select('*').eq('id', id).single();
+      const { data: event } = await supabase.from('speed_events').select('*').eq('id', id).eq('event_type', 'mixer').single();
       if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-      const { data: checkins } = await supabase.from('mixer_checkins').select('*').eq('event_id', id);
+      const { data: checkins } = await supabase.from('speed_checkins').select('*').eq('event_id', id);
       // Attach user info
       const checkinData: any[] = [];
       for (const c of checkins || []) {
@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
       }
       return NextResponse.json({ event, checkins: checkinData, stats: { statementCount: 0, guessCount: 0, starCount: 0 } });
     }
-    const { data: events } = await supabase.from('mixer_events').select('*').order('created_at', { ascending: false });
+    const { data: events } = await supabase.from('speed_events').select('*').eq('event_type', 'mixer').order('created_at', { ascending: false });
     const result: any[] = [];
     for (const ev of events || []) {
-      const { count } = await supabase.from('mixer_checkins').select('*', { count: 'exact', head: true }).eq('event_id', ev.id);
+      const { count } = await supabase.from('speed_checkins').select('*', { count: 'exact', head: true }).eq('event_id', ev.id);
       result.push({ ...ev, checkin_count: count || 0 });
     }
     return NextResponse.json(result);
@@ -48,9 +48,9 @@ export async function GET(req: NextRequest) {
 
   // Speed dating
   if (id) {
-    const { data: event } = await supabase.from('speed_dating_events').select('*').eq('id', id).single();
+    const { data: event } = await supabase.from('speed_events').select('*').eq('id', id).eq('event_type', 'speed_dating').single();
     if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    const { data: checkins } = await supabase.from('speed_dating_checkins').select('*').eq('event_id', id).order('seat_number');
+    const { data: checkins } = await supabase.from('speed_checkins').select('*').eq('event_id', id).order('seat_number');
     const checkinData: any[] = [];
     for (const c of checkins || []) {
       const { data: u } = await supabase.from('users').select('first_name, gender, age').eq('id', c.user_id).single();
@@ -63,11 +63,11 @@ export async function GET(req: NextRequest) {
     let matches: any[] = [];
 
     try {
-      const { data: r } = await supabase.from('speed_dating_rounds' as any).select('*').eq('event_id', id).order('round_number');
+      const { data: r } = await supabase.from('speed_rounds').select('*').eq('event_id', id).order('round_number');
       rounds = r || [];
       if (rounds.length > 0) {
         const roundIds = rounds.map((r: any) => r.id);
-        const { data: p } = await supabase.from('speed_dating_pairings' as any).select('*').in('round_id', roundIds);
+        const { data: p } = await supabase.from('speed_pairings').select('*').in('round_id', roundIds);
         pairings = p || [];
         // Attach names
         for (const pair of pairings) {
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
     // Matches from votes
     if ((event as any).status === 'completed') {
       try {
-        const { data: votes } = await supabase.from('speed_dating_votes').select('*').eq('event_id', id).eq('vote', 'yes');
+        const { data: votes } = await supabase.from('speed_votes').select('*').eq('event_id', id).eq('vote', 'yes');
         const voteMap: Record<string, Set<string>> = {};
         for (const v of votes || []) {
           if (!voteMap[v.voter_id]) voteMap[v.voter_id] = new Set();
@@ -108,10 +108,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ event, checkins: checkinData, rounds, pairings, matches });
   }
 
-  const { data: events } = await supabase.from('speed_dating_events').select('*').order('created_at', { ascending: false });
+  const { data: events } = await supabase.from('speed_events').select('*').eq('event_type', 'speed_dating').order('created_at', { ascending: false });
   const result: any[] = [];
   for (const ev of events || []) {
-    const { count } = await supabase.from('speed_dating_checkins').select('*', { count: 'exact', head: true }).eq('event_id', ev.id);
+    const { count } = await supabase.from('speed_checkins').select('*', { count: 'exact', head: true }).eq('event_id', ev.id);
     result.push({ ...ev, checkin_count: count || 0 });
   }
   return NextResponse.json(result);
@@ -130,18 +130,20 @@ export async function POST(req: NextRequest) {
   const host_username = 'host_' + generateCode(4).toLowerCase();
 
   if (type === 'mixer') {
-    await supabase.from('mixer_events').insert({
+    const { error } = await supabase.from('speed_events').insert({
       id, name: body.name, city: body.city || null, venue_name: body.venue_name || null,
       venue_address: body.venue_address || null, date: body.date, max_capacity: body.max_capacity || 50,
-      event_code, host_username, status: 'draft',
+      event_code, host_username, status: 'draft', event_type: 'mixer',
     });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else {
-    await supabase.from('speed_dating_events').insert({
+    const { error } = await supabase.from('speed_events').insert({
       id, name: body.name, city: body.city || null, venue_name: body.venue_name || null,
       venue_address: body.venue_address || null, date: body.date, max_capacity: body.max_capacity || 50,
       round_duration_seconds: body.round_duration_seconds || 300,
-      event_code, host_username, status: 'draft',
+      event_code, host_username, status: 'draft', event_type: 'speed_dating',
     });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ id, event_code, success: true });
@@ -153,7 +155,7 @@ export async function PATCH(req: NextRequest) {
 
   const supabase = createAdminClient();
   const { id, type, action, ...updates } = await req.json();
-  const table = type === 'mixer' ? 'mixer_events' : 'speed_dating_events';
+  const table = 'speed_events';
 
   if (action === 'start' || action === 'checkin') {
     await supabase.from(table).update({ status: action === 'start' ? 'active' : 'checkin' }).eq('id', id);
