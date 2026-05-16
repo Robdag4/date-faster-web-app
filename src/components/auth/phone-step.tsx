@@ -64,12 +64,12 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
       const normalizedPhone = normalizePhone(phone);
       // Sign in/up directly — skip SMS verification
       const result = await api.auth.verifyCode(normalizedPhone, '000000');
-      await refreshUser();
       toast.success('Welcome to Date Faster!');
+      // Redirect immediately — auth provider will pick up the session
       if (result.isNew || !result.onboardingComplete) {
-        router.push('/onboarding');
+        window.location.href = '/onboarding';
       } else {
-        router.push('/discover');
+        window.location.href = '/discover';
       }
     } catch (error: any) {
       console.error('Auth error:', error);
