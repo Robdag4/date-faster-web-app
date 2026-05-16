@@ -16,10 +16,12 @@ export async function POST(req: NextRequest) {
     });
 
     // Upsert profile — handles both existing rows and missing rows
+    // Always clear deleted_at in case this is a re-activated account
     const { error } = await admin.from('users').upsert({
       id: userId,
       ...profile,
       onboarding_complete: true,
+      deleted_at: null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
 
