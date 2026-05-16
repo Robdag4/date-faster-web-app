@@ -310,16 +310,15 @@ export default function OnboardingPage() {
     if (!code) { setEventCodeError('Enter your event code'); return; }
     setEventCodeError('');
     
-    // For now, just validate format and proceed (you'd implement actual event validation later)
     if (code.length < 3) {
       setEventCodeError('Invalid event code');
       return;
     }
 
     add('user', `🎟️ Event code: ${code}`);
-    add('bot', "Event code verified! ✅ Setting up your profile...");
+    add('bot', "Verifying event code...");
 
-    // Save profile and complete onboarding
+    // Save profile and complete onboarding first
     try {
       const bio = buildBio(profile);
       await supabase.from('users').update({
@@ -344,11 +343,37 @@ export default function OnboardingPage() {
       return;
     }
 
-    add('bot', "You're all set! 🎉 Taking you to the event...");
-    setStep('done');
-    setTimeout(() => {
-      router.replace('/discover');
-    }, 1000);
+    // Check into the mixer event
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const res = await fetch('/api/mixer/checkin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authSession?.access_token ? { Authorization: `Bearer ${authSession.access_token}` } : {}),
+        },
+        body: JSON.stringify({ eventCode: code }),
+      });
+      const data = await res.json();
+
+      if (!res.ok && res.status !== 409) {
+        // 409 = already checked in, that's fine
+        add('bot', `Event code not found or check-in closed. You can still use the app! 🎯`);
+        setStep('done');
+        setTimeout(() => router.replace('/discover'), 1500);
+        return;
+      }
+
+      add('bot', "You're checked in! 🎉 Let's set up your Two Truths and a Lie...");
+      setStep('done');
+      setTimeout(() => {
+        router.replace('/events/mixer');
+      }, 1000);
+    } catch (err: any) {
+      add('bot', "Couldn't verify event code, but your profile is saved! Taking you to the app...");
+      setStep('done');
+      setTimeout(() => router.replace('/discover'), 1500);
+    }
   };
 
   const handleLocation = async () => {
