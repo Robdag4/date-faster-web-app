@@ -437,7 +437,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div ref={containerRef} className="fixed left-0 right-0 flex flex-col bg-cream-50" style={{ height: '100dvh', top: 0, overflow: 'hidden' }}>
+    <div ref={containerRef} className="fixed inset-0 flex flex-col bg-cream-50 overflow-hidden">
       <div className="px-4 py-3 text-center bg-white border-b border-slate-200 shrink-0">
         <h2 className="font-bold text-lg text-slate-900">🤖 Date Faster Setup</h2>
       </div>
@@ -589,8 +589,8 @@ export default function OnboardingPage() {
 
       {/* Text input */}
       {!['location', 'done', 'photos', 'interests', 'relationship_goal', 'gender', 'sexuality'].includes(step) && !showEventCode && (
-        <div className="px-4 py-3 bg-white border-t border-slate-200 shrink-0 pb-safe space-y-2">
-          <div className="flex items-center gap-2 w-full">
+        <div className="px-3 py-3 bg-white border-t border-slate-200 shrink-0 pb-safe space-y-2">
+          <div className="flex items-center gap-2">
             <input
               ref={inputRef}
               value={input}
@@ -600,7 +600,7 @@ export default function OnboardingPage() {
               className="flex-1 min-w-0 rounded-full px-4 py-2.5 outline-none text-[15px] bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
             />
             <button onClick={() => handleSend()}
-              className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white font-bold gradient-bg">
+              className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-white font-bold gradient-bg text-lg">
               →
             </button>
           </div>
