@@ -10,7 +10,7 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
   const router = useRouter();
   const [timedOut, setTimedOut] = useState(false);
 
@@ -22,12 +22,13 @@ export default function AuthLayout({
   useEffect(() => {
     if (loading && !timedOut) return;
 
-    if (!user) {
+    if (!session) {
       router.replace('/');
-    } else if (!user.onboarding_complete) {
-      router.replace('/onboarding');
     }
-  }, [user, loading, timedOut, router]);
+    // Don't redirect for missing user or incomplete onboarding —
+    // the event code bypass flow needs to reach /events/mixer
+    // before the user state has fully updated
+  }, [session, loading, timedOut, router]);
 
   if (loading && !timedOut) {
     return (
@@ -37,7 +38,7 @@ export default function AuthLayout({
     );
   }
 
-  if (!user || !user.onboarding_complete) {
+  if (!session) {
     return null;
   }
 
