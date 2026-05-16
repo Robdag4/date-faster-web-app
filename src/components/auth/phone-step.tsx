@@ -61,7 +61,9 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
       const normalizedPhone = normalizePhone(phone);
       const result = await api.auth.verifyCode(normalizedPhone, '000000');
       toast.success('Welcome to Date Faster!');
-      // Use window.location to force full reload — ensures auth state is fresh
+      // Brief delay to ensure session is persisted to localStorage
+      await new Promise(r => setTimeout(r, 300));
+      // Full reload so auth provider picks up the persisted session
       if (result.isNew || !result.onboardingComplete) {
         window.location.replace('/onboarding');
       } else {
