@@ -600,7 +600,8 @@ export default function OnboardingPage() {
               className="flex-1 min-w-0 rounded-full px-4 py-2.5 outline-none text-[15px] bg-cream-50 border border-slate-200 text-slate-900 focus:border-rose-500"
             />
             <button onClick={() => handleSend()}
-              className="shrink-0 px-4 py-2.5 rounded-full text-white font-semibold text-[15px] gradient-bg">
+              className="shrink-0 px-5 py-2.5 rounded-full text-white font-semibold text-[15px]"
+              style={{ background: '#EE3550' }}>
               Send
             </button>
           </div>
