@@ -13,25 +13,17 @@ interface PhoneStepProps {
 export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
-  // auth provider will pick up session on page reload
 
   const normalizePhone = (phoneNumber: string): string => {
-    // Remove all non-digit characters
     let cleaned = phoneNumber.replace(/\D/g, '');
-    
-    // If it starts with 1, keep it; otherwise add 1 (US default)
     if (!cleaned.startsWith('1') && cleaned.length === 10) {
       cleaned = '1' + cleaned;
     }
-    
     return '+' + cleaned;
   };
 
   const formatPhone = (value: string): string => {
-    // Remove all non-digit characters
     const digits = value.replace(/\D/g, '');
-    
-    // Format as (XXX) XXX-XXXX
     if (digits.length >= 6) {
       return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
     } else if (digits.length >= 3) {
@@ -41,7 +33,6 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
   };
 
   const handlePhoneChange = (value: string) => {
-    // Only allow digits, spaces, parentheses, and dashes
     const cleaned = value.replace(/[^\d\s\(\)\-]/g, '');
     const formatted = formatPhone(cleaned);
     setPhone(formatted);
@@ -59,21 +50,19 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
 
     try {
       const normalizedPhone = normalizePhone(phone);
-      const result = await api.auth.verifyCode(normalizedPhone, '000000');
+      await api.auth.verifyCode(normalizedPhone, '000000');
       toast.success('Welcome to Date Faster!');
-      // Brief delay to ensure session is persisted to localStorage
-      await new Promise(r => setTimeout(r, 300));
-      // Full reload so auth provider picks up the persisted session
-      if (result.isNew || !result.onboardingComplete) {
-        window.location.replace('/onboarding');
-      } else {
-        window.location.replace('/');
-      }
+      // Don't redirect manually!
+      // signInWithPassword triggers onAuthStateChange in AuthProvider,
+      // which sets user state, which causes HomePage to re-render and redirect.
+      // Just show a "signing in" state and let React handle it.
     } catch (error: any) {
       console.error('Auth error:', error);
       toast.error(error.message || 'Something went wrong');
       setLoading(false);
     }
+    // Note: we intentionally don't setLoading(false) on success —
+    // the component will unmount when HomePage redirects away from AuthFlow
   };
 
   return (
@@ -106,7 +95,7 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
             value={phone}
             onChange={(e) => handlePhoneChange(e.target.value)}
             className="input text-lg text-center tracking-wider"
-            maxLength={14} // Format: (XXX) XXX-XXXX
+            maxLength={14}
             required
             disabled={loading}
           />

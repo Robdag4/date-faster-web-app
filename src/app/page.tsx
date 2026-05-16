@@ -11,47 +11,53 @@ export default function HomePage() {
   const router = useRouter();
   const [timedOut, setTimedOut] = useState(false);
 
-  // Hard 3-second timeout — if auth is still loading, force show auth flow
+  // Hard 3s timeout to prevent infinite spinner
   useEffect(() => {
-    const timer = setTimeout(() => setTimedOut(true), 3000);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setTimedOut(true), 3000);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
+    // Still loading and haven't timed out — wait
     if (loading && !timedOut) return;
+
     if (user) {
+      // Authenticated with profile
       if (!user.onboarding_complete) {
-        router.push('/onboarding');
+        router.replace('/onboarding');
       } else {
+        // Check for active mixer event
         checkActiveEvent();
       }
-    } else if (session && !user) {
-      router.push('/onboarding');
+    } else if (session) {
+      // Authenticated but no profile row (or profile fetch failed)
+      // Send to onboarding — they need to complete their profile
+      router.replace('/onboarding');
     }
-    // If timedOut and no session/user, AuthFlow will render below
-  }, [user, session, loading, timedOut, router]);
+    // else: no session, no user → show AuthFlow (below)
+  }, [user, session, loading, timedOut]);
 
   const checkActiveEvent = async () => {
     try {
       const { data: { session: s } } = await supabase.auth.getSession();
-      if (!s) { router.push('/discover'); return; }
+      if (!s) { router.replace('/discover'); return; }
       const res = await fetch('/api/events/mixer/statements', {
         headers: { 'Authorization': `Bearer ${s.access_token}` },
       });
       if (res.ok) {
         const data = await res.json();
         if (data.eventId && ['active', 'checkin', 'draft'].includes(data.eventStatus)) {
-          router.push('/events/mixer');
+          router.replace('/events/mixer');
           return;
         }
       }
     } catch (e) {
       console.error('Error checking active event:', e);
     }
-    router.push('/discover');
+    router.replace('/discover');
   };
 
-  // Show spinner only briefly (max 3s)
+  // Loading state (max 3s)
   if (loading && !timedOut) {
     return (
       <div className="min-h-screen bg-gradient-bg flex items-center justify-center">
@@ -60,12 +66,12 @@ export default function HomePage() {
     );
   }
 
-  // No user — show auth flow (also shown after timeout if auth hung)
+  // Not authenticated — show sign in
   if (!user && !session) {
     return <AuthFlow />;
   }
 
-  // Have user/session, waiting for redirect
+  // Authenticated, waiting for redirect
   return (
     <div className="min-h-screen bg-gradient-bg flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>

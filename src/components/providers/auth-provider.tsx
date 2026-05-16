@@ -21,22 +21,13 @@ const AuthContext = createContext<AuthContextType>({
   refreshUser: async () => {},
 });
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
-interface AuthProviderProps {
-  children: React.ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
   const fetchUserProfile = async (userId: string): Promise<AppUser | null> => {
     try {
       const { data, error } = await supabase
@@ -47,111 +38,81 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .single();
 
       if (error || !data) {
-        console.error('Error fetching user profile:', error);
+        console.error('fetchUserProfile error:', error?.message);
         return null;
       }
-
       return data as AppUser;
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('fetchUserProfile exception:', error);
       return null;
     }
   };
 
   const refreshUser = async () => {
-    if (session?.user?.id) {
-      const userProfile = await fetchUserProfile(session.user.id);
-      setUser(userProfile);
+    const { data: { session: s } } = await supabase.auth.getSession();
+    if (s?.user?.id) {
+      const profile = await fetchUserProfile(s.user.id);
+      setUser(profile);
+      setSession(s);
     }
   };
 
   const signOut = async () => {
-    try {
-      setLoading(true);
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
-    } catch (error) {
-      console.error('Error signing out:', error);
-    } finally {
-      setLoading(false);
-    }
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
   };
 
   useEffect(() => {
-    // Safety timeout — never stay loading for more than 5 seconds
-    const safetyTimeout = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
+    let mounted = true;
 
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting initial session:', error);
-          setLoading(false);
-          return;
-        }
-
-        setSession(initialSession);
-
-        if (initialSession?.user?.id) {
-          try {
-            const userProfile = await fetchUserProfile(initialSession.user.id);
-            setUser(userProfile);
-          } catch (e) {
-            console.error('Error fetching user profile:', e);
-          }
-        }
-      } catch (error) {
-        console.error('Error getting initial session:', error);
-      } finally {
-        setLoading(false);
+    // 1. Get initial session
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      if (!mounted) return;
+      setSession(s);
+      if (s?.user?.id) {
+        const profile = await fetchUserProfile(s.user.id);
+        if (mounted) setUser(profile);
       }
-    };
+      if (mounted) setLoading(false);
+    }).catch(() => {
+      if (mounted) setLoading(false);
+    });
 
-    getInitialSession();
-
-    // Listen for auth changes
+    // 2. Listen for auth changes (sign in, sign out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log('Auth state changed:', event, newSession);
-        
+        if (!mounted) return;
+        console.log('Auth event:', event);
         setSession(newSession);
 
         if (newSession?.user?.id && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          try {
-            const userProfile = await fetchUserProfile(newSession.user.id);
-            setUser(userProfile);
-          } catch (e) {
-            console.error('Error fetching user profile on auth change:', e);
+          const profile = await fetchUserProfile(newSession.user.id);
+          if (mounted) {
+            setUser(profile);
+            setLoading(false);
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setLoading(false);
         }
-
-        setLoading(false);
       }
     );
 
+    // 3. Safety timeout — never stay loading forever
+    const safety = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 4000);
+
     return () => {
-      clearTimeout(safetyTimeout);
+      mounted = false;
+      clearTimeout(safety);
       subscription.unsubscribe();
     };
   }, []);
 
-  const value: AuthContextType = {
-    user,
-    session,
-    loading,
-    signOut,
-    refreshUser,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, session, loading, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
