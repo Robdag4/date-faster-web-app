@@ -4,25 +4,32 @@ import { useAuth } from '@/components/providers/auth-provider';
 import { AuthFlow } from '@/components/auth/auth-flow';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function HomePage() {
   const { user, session, loading } = useAuth();
   const router = useRouter();
+  const [timedOut, setTimedOut] = useState(false);
+
+  // Hard 3-second timeout — if auth is still loading, force show auth flow
+  useEffect(() => {
+    const timer = setTimeout(() => setTimedOut(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading && !timedOut) return;
     if (user) {
       if (!user.onboarding_complete) {
         router.push('/onboarding');
       } else {
-        // Check for active mixer event before going to discover
         checkActiveEvent();
       }
     } else if (session && !user) {
       router.push('/onboarding');
     }
-  }, [user, session, loading, router]);
+    // If timedOut and no session/user, AuthFlow will render below
+  }, [user, session, loading, timedOut, router]);
 
   const checkActiveEvent = async () => {
     try {
@@ -44,7 +51,8 @@ export default function HomePage() {
     router.push('/discover');
   };
 
-  if (loading) {
+  // Show spinner only briefly (max 3s)
+  if (loading && !timedOut) {
     return (
       <div className="min-h-screen bg-gradient-bg flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
@@ -52,11 +60,12 @@ export default function HomePage() {
     );
   }
 
-  if (!user) {
+  // No user — show auth flow (also shown after timeout if auth hung)
+  if (!user && !session) {
     return <AuthFlow />;
   }
 
-  // Show loading while redirecting
+  // Have user/session, waiting for redirect
   return (
     <div className="min-h-screen bg-gradient-bg flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
