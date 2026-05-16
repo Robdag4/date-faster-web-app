@@ -502,7 +502,7 @@ export default function OnboardingPage() {
               ← Back
             </button>
             <button onClick={handleEventCodeBypass}
-              className="flex-1 py-3 rounded-xl text-white font-semibold text-sm gradient-bg">
+              className="flex-1 py-3 rounded-xl text-white font-semibold text-sm bg-rose-500">
               Verify & Skip →
             </button>
           </div>
@@ -533,7 +533,7 @@ export default function OnboardingPage() {
           <button
             onClick={handleInterestsDone}
             disabled={selectedInterests.length < 2}
-            className="w-full py-3 rounded-xl text-white font-semibold disabled:opacity-40 gradient-bg"
+            className="w-full py-3 rounded-xl text-white font-semibold disabled:opacity-40 bg-rose-500"
           >
             Continue ({selectedInterests.length} selected)
           </button>
@@ -558,7 +558,7 @@ export default function OnboardingPage() {
               {uploading ? 'Uploading...' : `📸 Upload Photo/Video (${photos.length}/6)`}
             </button>
             {photos.length >= 3 && (
-              <button onClick={handlePhotoDone} className="py-3 px-5 rounded-xl text-white font-semibold gradient-bg">
+              <button onClick={handlePhotoDone} className="py-3 px-5 rounded-xl text-white font-semibold bg-rose-500">
                 Continue →
               </button>
             )}
@@ -581,7 +581,7 @@ export default function OnboardingPage() {
       {/* Location */}
       {step === 'location' && (
         <div className="px-4 py-3 bg-white border-t border-slate-200">
-          <button onClick={handleLocation} className="w-full py-3 rounded-xl text-white font-semibold text-lg gradient-bg">
+          <button onClick={handleLocation} className="w-full py-3 rounded-xl text-white font-semibold text-lg bg-rose-500">
             📍 Enable Location
           </button>
         </div>
