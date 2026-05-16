@@ -333,7 +333,7 @@ export default function OnboardingPage() {
     add('user', `🎟️ Event code: ${code}`);
     add('bot', "Verifying event code...");
 
-    // Save profile and complete onboarding first
+    // Save profile via server-side API (bypasses RLS)
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const userId = user?.id || authUser?.id;
@@ -342,24 +342,31 @@ export default function OnboardingPage() {
         return;
       }
       const bio = buildBio(profile);
-      const { error: updateErr } = await supabase.from('users').update({
-        first_name: profile.first_name,
-        age: profile.age,
-        date_of_birth: profile.date_of_birth,
-        gender: profile.gender,
-        preference: profile.preference,
-        sexuality: profile.sexuality,
-        bio,
-        job_title: profile.job_title,
-        tagline: profile.tagline,
-        interests: profile.interests,
-        ideal_date: profile.ideal_date,
-        relationship_goal: profile.relationship_goal,
-        onboarding_complete: true,
-      }).eq('id', userId);
+      const res = await fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          profile: {
+            first_name: profile.first_name,
+            age: profile.age,
+            date_of_birth: profile.date_of_birth,
+            gender: profile.gender,
+            preference: profile.preference,
+            sexuality: profile.sexuality,
+            bio,
+            job_title: profile.job_title,
+            tagline: profile.tagline,
+            interests: profile.interests,
+            ideal_date: profile.ideal_date,
+            relationship_goal: profile.relationship_goal,
+          },
+        }),
+      });
       
-      if (updateErr) {
-        console.error('Profile update error:', updateErr);
+      if (!res.ok) {
+        const data = await res.json();
+        console.error('Profile save error:', data.error);
         add('bot', `Something went wrong saving your profile. Try again! 🔄`);
         return;
       }
