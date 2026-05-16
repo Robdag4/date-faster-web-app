@@ -13,7 +13,10 @@ function checkAuth(req: NextRequest) {
 }
 
 function generateCode(len = 6) {
-  return Math.random().toString(36).substring(2, 2 + len).toUpperCase();
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < len; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
 }
 
 export async function GET(req: NextRequest) {
