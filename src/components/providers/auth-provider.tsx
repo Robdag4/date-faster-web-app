@@ -35,11 +35,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('*')
         .eq('id', userId)
         .is('deleted_at', null)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        console.error('fetchUserProfile error:', error?.message);
+      if (error) {
+        console.error('fetchUserProfile error:', error.message);
         return null;
+      }
+      if (!data) {
+        // Auth user exists but no profile row — create a skeleton row
+        // so onboarding can proceed
+        console.log('No profile row for user, creating skeleton...');
+        const { data: newRow, error: insertErr } = await supabase
+          .from('users')
+          .insert({ id: userId, first_name: '', age: 0, onboarding_complete: false })
+          .select('*')
+          .single();
+        if (insertErr) {
+          console.error('Failed to create skeleton profile:', insertErr.message);
+          return null;
+        }
+        return newRow as AppUser;
       }
       return data as AppUser;
     } catch (error) {
