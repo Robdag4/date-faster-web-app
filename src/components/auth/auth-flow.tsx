@@ -16,6 +16,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ onSuccess }) => {
 
   const handlePhoneSuccess = (phone: string) => {
     setPhoneNumber(phone);
+    // Skip code step — auto-verify with dummy code
     setStep('code');
   };
 

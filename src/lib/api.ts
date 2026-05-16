@@ -37,35 +37,44 @@ const handleSupabaseError = (error: any, defaultMessage: string = 'An error occu
 
 // Auth API
 export const auth = {
-  // Send SMS verification code
+  // Send SMS verification code (currently bypassed — no OTP)
   sendCode: async (phoneNumber: string): Promise<{ success: boolean }> => {
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: phoneNumber,
-    });
-    
-    handleSupabaseError(error);
+    // Skip OTP — go straight to sign-up/sign-in
     return { success: true };
   },
 
-  // Verify SMS code and sign in
+  // Sign in directly with phone number (no SMS verification)
   verifyCode: async (
     phoneNumber: string, 
-    token: string
+    _token: string
   ): Promise<{ 
     token: string; 
     userId: string; 
     isNew: boolean; 
     onboardingComplete: boolean 
   }> => {
-    const { data, error } = await supabase.auth.verifyOtp({
+    // Use phone+password auth (password = phone number for now)
+    const password = phoneNumber + '_df2026';
+
+    // Try sign in first
+    let { data, error } = await supabase.auth.signInWithPassword({
       phone: phoneNumber,
-      token,
-      type: 'sms',
+      password,
     });
 
-    handleSupabaseError(error);
+    if (error && (error.message.includes('Invalid login') || error.message.includes('invalid'))) {
+      // User doesn't exist — sign up
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        phone: phoneNumber,
+        password,
+      });
+      handleSupabaseError(signUpError);
+      data = signUpData;
+    } else {
+      handleSupabaseError(error);
+    }
 
-    if (!data.user) {
+    if (!data?.user) {
       throw new ApiError('Authentication failed', 401);
     }
 
