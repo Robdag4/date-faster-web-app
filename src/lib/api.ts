@@ -53,7 +53,7 @@ export const auth = {
     isNew: boolean; 
     onboardingComplete: boolean 
   }> => {
-    // Call server-side API that handles auth via admin client
+    // First, ensure account exists via server-side admin API
     const res = await fetch('/api/auth/phone', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -65,12 +65,18 @@ export const auth = {
       throw new ApiError(data.error || 'Authentication failed', res.status);
     }
 
-    // Set the session in supabase client
-    if (data.token && data.refreshToken) {
-      await supabase.auth.setSession({
-        access_token: data.token,
-        refresh_token: data.refreshToken,
-      });
+    // Now sign in client-side (avoids setSession lock issues)
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    const fakeEmail = `${cleanPhone}@datefaster.app`;
+    const password = cleanPhone + '_df2026';
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: fakeEmail,
+      password,
+    });
+
+    if (signInError) {
+      throw new ApiError(signInError.message || 'Sign in failed', 401);
     }
 
     return {
