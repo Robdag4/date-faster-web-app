@@ -62,16 +62,14 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
 
     try {
       const normalizedPhone = normalizePhone(phone);
-      // Sign in/up directly — skip SMS verification
       const result = await api.auth.verifyCode(normalizedPhone, '000000');
       toast.success('Welcome to Date Faster!');
-      // Small delay to let Supabase persist session to localStorage before redirect
-      await new Promise(resolve => setTimeout(resolve, 500));
-      // Hard redirect — auth provider will pick up session on reload
+      // Refresh auth state, then redirect without full page reload
+      await refreshUser();
       if (result.isNew || !result.onboardingComplete) {
-        window.location.href = '/onboarding';
+        router.push('/onboarding');
       } else {
-        window.location.href = '/discover';
+        router.push('/discover');
       }
     } catch (error: any) {
       console.error('Auth error:', error);
