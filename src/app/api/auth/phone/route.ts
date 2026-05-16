@@ -94,8 +94,8 @@ export async function POST(req: NextRequest) {
 
       if (updateRes.status === 200) {
         // Delete any duplicate fake-email auth records
-        const { data: { users: allUsers } } = await adminClient.auth.admin.listUsers({ perPage: 500 });
-        const dupes = (allUsers || []).filter((u: any) => u.email === fakeEmail && u.id !== existingUserRow.id);
+        const listAll = await adminAuthFetch('users?per_page=500');
+        const dupes = (listAll.data?.users || []).filter((u: any) => u.email === fakeEmail && u.id !== existingUserRow.id);
         for (const dupe of dupes) {
           await adminAuthFetch(`users/${dupe.id}`, 'DELETE');
         }
