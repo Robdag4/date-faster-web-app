@@ -79,6 +79,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
+    // Safety timeout — never stay loading for more than 5 seconds
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
     // Get initial session
     const getInitialSession = async () => {
       try {
@@ -93,8 +98,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(initialSession);
 
         if (initialSession?.user?.id) {
-          const userProfile = await fetchUserProfile(initialSession.user.id);
-          setUser(userProfile);
+          try {
+            const userProfile = await fetchUserProfile(initialSession.user.id);
+            setUser(userProfile);
+          } catch (e) {
+            console.error('Error fetching user profile:', e);
+          }
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
@@ -113,8 +122,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(newSession);
 
         if (newSession?.user?.id && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          const userProfile = await fetchUserProfile(newSession.user.id);
-          setUser(userProfile);
+          try {
+            const userProfile = await fetchUserProfile(newSession.user.id);
+            setUser(userProfile);
+          } catch (e) {
+            console.error('Error fetching user profile on auth change:', e);
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
         }
@@ -124,6 +137,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
 
     return () => {
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, []);

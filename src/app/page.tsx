@@ -6,18 +6,22 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (loading) return;
+    if (user) {
       if (!user.onboarding_complete) {
         router.push('/onboarding');
       } else {
         router.push('/discover');
       }
+    } else if (session && !user) {
+      // Session exists but no user profile — send to onboarding to create one
+      router.push('/onboarding');
     }
-  }, [user, loading, router]);
+  }, [user, session, loading, router]);
 
   if (loading) {
     return (
