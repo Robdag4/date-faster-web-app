@@ -65,18 +65,22 @@ export const auth = {
       throw new ApiError(data.error || 'Authentication failed', res.status);
     }
 
-    // Now sign in client-side (avoids setSession lock issues)
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    const fakeEmail = `${cleanPhone}@datefaster.app`;
-    const password = cleanPhone + '_df2026';
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: fakeEmail,
-      password,
+    // Set session client-side using tokens from server
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: data.token,
+      refresh_token: data.refreshToken,
     });
 
-    if (signInError) {
-      throw new ApiError(signInError.message || 'Sign in failed', 401);
+    if (sessionError) {
+      // Fallback: try signInWithPassword
+      const cleanPhone = phoneNumber.replace(/\D/g, '');
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: `${cleanPhone}@datefaster.app`,
+        password: cleanPhone + '_df2026',
+      });
+      if (signInError) {
+        throw new ApiError(signInError.message || 'Sign in failed', 401);
+      }
     }
 
     return {
