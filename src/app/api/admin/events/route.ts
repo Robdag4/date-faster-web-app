@@ -128,8 +128,25 @@ export async function POST(req: NextRequest) {
   const type = body.type; // 'speed' or 'mixer'
 
   const id = uuid();
-  const event_code = generateCode(4);
-  const host_username = 'host_' + generateCode(4).toLowerCase();
+  
+  // Generate unique event code (not used by any active event)
+  let event_code = '';
+  for (let attempts = 0; attempts < 20; attempts++) {
+    const candidate = generateCode(4);
+    const { data: existing } = await supabase
+      .from('speed_events')
+      .select('id')
+      .eq('event_code', candidate)
+      .in('status', ['draft', 'checkin', 'active'])
+      .limit(1);
+    if (!existing || existing.length === 0) {
+      event_code = candidate;
+      break;
+    }
+  }
+  if (!event_code) return NextResponse.json({ error: 'Could not generate unique code' }, { status: 500 });
+  
+  const host_username = 'host_' + generateCode(4);
 
   if (type === 'mixer') {
     const { error } = await supabase.from('speed_events').insert({
