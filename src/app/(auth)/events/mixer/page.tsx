@@ -107,6 +107,12 @@ export default function MixerPage() {
       if (statementsResponse.ok) {
         const data = await statementsResponse.json();
         if (data.eventId) {
+          // If event is completed, don't lock user in — show join screen for a new event
+          if (data.eventStatus === 'completed') {
+            setEventId(null);
+            return;
+          }
+          
           setEventId(data.eventId);
           setEventStatus(data.eventStatus);
           
@@ -118,7 +124,7 @@ export default function MixerPage() {
           }
           
           // Load attendees if event is active
-          if (data.eventStatus === 'active' || data.eventStatus === 'completed') {
+          if (data.eventStatus === 'active') {
             loadAttendees();
           }
         }
