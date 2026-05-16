@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Smartphone, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useAuth } from '@/components/providers/auth-provider';
-import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 interface PhoneStepProps {
@@ -15,8 +13,7 @@ interface PhoneStepProps {
 export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
-  const { refreshUser } = useAuth();
-  const router = useRouter();
+  // auth provider will pick up session on page reload
 
   const normalizePhone = (phoneNumber: string): string => {
     // Remove all non-digit characters
@@ -64,12 +61,11 @@ export const PhoneStep: React.FC<PhoneStepProps> = ({ onSuccess }) => {
       const normalizedPhone = normalizePhone(phone);
       const result = await api.auth.verifyCode(normalizedPhone, '000000');
       toast.success('Welcome to Date Faster!');
-      // Refresh auth state, then redirect without full page reload
-      await refreshUser();
+      // Use window.location to force full reload — ensures auth state is fresh
       if (result.isNew || !result.onboardingComplete) {
-        router.push('/onboarding');
+        window.location.replace('/onboarding');
       } else {
-        router.push('/discover');
+        window.location.replace('/');
       }
     } catch (error: any) {
       console.error('Auth error:', error);
