@@ -529,15 +529,18 @@ export default function MixerPage() {
                     ) : (
                       <XCircle className="w-8 h-8 mx-auto mb-2 text-red-500" />
                     )}
-                    <h3 className={`font-medium ${
+                    <h3 className={`font-medium text-lg ${
                       lastGuessResult.correct ? 'text-green-900' : 'text-red-900'
                     }`}>
-                      {lastGuessResult.correct ? 'Correct!' : 'Incorrect!'}
+                      {lastGuessResult.correct ? '🎉 Correct!' : '❌ Wrong!'}
                     </h3>
-                    <p className={`text-sm ${
+                    <p className={`text-sm mt-1 ${
                       lastGuessResult.correct ? 'text-green-700' : 'text-red-700'
                     }`}>
-                      The lie was statement {lastGuessResult.lieIndex}
+                      The lie was Statement {lastGuessResult.lieIndex}
+                      {currentTarget?.statements && (
+                        <>: "{currentTarget.statements.find(s => s.index === lastGuessResult.lieIndex)?.text}"</>
+                      )}
                     </p>
                   </div>
                 ) : (

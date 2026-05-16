@@ -38,5 +38,13 @@ export async function POST(req: NextRequest) {
     guessed_index: originalGuessedIndex, is_correct: isCorrect
   });
 
-  return NextResponse.json({ correct: isCorrect, lieIndex: targetStmt.lie_index });
+  // Return the display position of the lie (not the original DB index)
+  let lieDisplayIndex = targetStmt.lie_index; // fallback to original
+  if (mapping) {
+    const mapArr = mapping.split(',').map(Number);
+    // mapArr[displayPos-1] = originalIndex, so find which display pos maps to the lie
+    lieDisplayIndex = mapArr.indexOf(targetStmt.lie_index) + 1;
+  }
+
+  return NextResponse.json({ correct: isCorrect, lieIndex: lieDisplayIndex });
 }
