@@ -3,7 +3,7 @@
 import { useAuth } from '@/components/providers/auth-provider';
 import { AppShell } from '@/components/layout/app-shell';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function AuthLayout({
   children,
@@ -12,16 +12,24 @@ export default function AuthLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/');
-    } else if (!loading && user && !user.onboarding_complete) {
-      router.push('/onboarding');
-    }
-  }, [user, loading, router]);
+    const t = setTimeout(() => setTimedOut(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
 
-  if (loading) {
+  useEffect(() => {
+    if (loading && !timedOut) return;
+
+    if (!user) {
+      router.replace('/');
+    } else if (!user.onboarding_complete) {
+      router.replace('/onboarding');
+    }
+  }, [user, loading, timedOut, router]);
+
+  if (loading && !timedOut) {
     return (
       <div className="min-h-screen bg-gradient-bg flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>

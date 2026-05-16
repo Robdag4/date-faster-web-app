@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { PhoneStep } from './phone-step';
-import { CodeStep } from './code-step';
 import { Heart } from 'lucide-react';
 
 export interface AuthFlowProps {
@@ -11,18 +9,6 @@ export interface AuthFlowProps {
 }
 
 export const AuthFlow: React.FC<AuthFlowProps> = ({ onSuccess }) => {
-  const [step, setStep] = useState<'phone' | 'code'>('phone');
-  const [phoneNumber, setPhoneNumber] = useState('');
-
-  const handlePhoneSuccess = (phone: string) => {
-    setPhoneNumber(phone);
-    setStep('code');
-  };
-
-  const handleBack = () => {
-    setStep('phone');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-bg flex flex-col items-center justify-center px-4">
       {/* Logo and Branding */}
@@ -51,37 +37,15 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({ onSuccess }) => {
         </p>
       </motion.div>
 
-      {/* Auth Steps */}
+      {/* Phone Step Only */}
       <div className="w-full max-w-md">
-        <AnimatePresence mode="wait">
-          {step === 'phone' && (
-            <motion.div
-              key="phone"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <PhoneStep onSuccess={handlePhoneSuccess} />
-            </motion.div>
-          )}
-          
-          {step === 'code' && (
-            <motion.div
-              key="code"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <CodeStep 
-                phoneNumber={phoneNumber} 
-                onBack={handleBack}
-                onSuccess={onSuccess}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <PhoneStep onSuccess={() => onSuccess?.()} />
+        </motion.div>
       </div>
 
       {/* Trust indicators */}

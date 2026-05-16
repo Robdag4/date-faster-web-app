@@ -47,19 +47,28 @@ export default function OnboardingPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [timedOut, setTimedOut] = useState(false);
+
+  // Hard 3s timeout for auth loading
   useEffect(() => {
-    // Wait for auth to finish loading before checking
-    if (authLoading) return;
-    // Redirect if user is not authenticated or already completed onboarding
-    if (!user && !session) {
-      router.push('/');
+    const t = setTimeout(() => setTimedOut(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    // Still loading and haven't timed out — wait
+    if (authLoading && !timedOut) return;
+
+    if (!session) {
+      router.replace('/');
       return;
     }
     if (user?.onboarding_complete) {
-      router.push('/discover');
+      router.replace('/discover');
       return;
     }
-  }, [user, session, authLoading, router]);
+    // session exists (user may be null or onboarding incomplete) — show onboarding UI
+  }, [user, session, authLoading, timedOut, router]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -430,12 +439,18 @@ export default function OnboardingPage() {
 
   const replies = quickReplies();
 
-  if (!user) {
+  // Show spinner while auth is loading (max 3s)
+  if (authLoading && !timedOut) {
     return (
       <div className="min-h-screen bg-cream-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500"></div>
       </div>
     );
+  }
+
+  // No session after loading — redirect handled by useEffect, show nothing
+  if (!session) {
+    return null;
   }
 
   return (

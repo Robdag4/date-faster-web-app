@@ -41,32 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('fetchUserProfile error:', error.message);
         return null;
       }
-      if (!data) {
-        // Auth user exists but no profile row (or RLS blocks it).
-        // Try creating via server-side API which uses service role key.
-        console.log('No profile row found, creating via API...');
-        try {
-          const res = await fetch('/api/auth/ensure-profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId }),
-          });
-          if (res.ok) {
-            // Re-fetch with client (now RLS should work since row exists with correct id)
-            const { data: retryData } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', userId)
-              .is('deleted_at', null)
-              .maybeSingle();
-            return retryData as AppUser | null;
-          }
-        } catch (e) {
-          console.error('ensure-profile failed:', e);
-        }
-        return null;
-      }
-      return data as AppUser;
+      return data as AppUser | null;
     } catch (error) {
       console.error('fetchUserProfile exception:', error);
       return null;
@@ -104,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (mounted) setLoading(false);
     });
 
-    // 2. Listen for auth changes (sign in, sign out, token refresh)
+    // 2. Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!mounted) return;
@@ -124,10 +99,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // 3. Safety timeout — never stay loading forever
+    // 3. Safety timeout — never stay loading more than 3s
     const safety = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 4000);
+    }, 3000);
 
     return () => {
       mounted = false;
