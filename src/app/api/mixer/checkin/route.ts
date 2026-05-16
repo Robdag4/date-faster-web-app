@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { createClient, createAdminClient } from '@/lib/supabase';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuid } from 'uuid';
 
 export async function POST(request: NextRequest) {
@@ -10,13 +11,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'eventCode required' }, { status: 400 });
     }
 
-    const supabase = createClient();
-
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Create client with auth token from request
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    
+    let userId: string | null = null;
+    
+    if (token) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const authClient = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const { data: { user } } = await authClient.auth.getUser(token);
+      userId = user?.id || null;
+    }
+    
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const user = { id: userId };
+    const supabase = createAdminClient();
 
     // Get user profile
     const { data: userProfile, error: userError } = await supabase
