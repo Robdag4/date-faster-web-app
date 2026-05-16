@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     let userId: string | null = null;
     
     if (token) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fptwvsylvhzfunpspkej.supabase.co';
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwdHd2c3lsdmh6ZnVucHNwa2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2MTkwOTEsImV4cCI6MjA5MjE5NTA5MX0.zSldAWcMe6a2LlALD2Ty4XDLU44C-jvHqw3h2f_EeC4';
       const authClient = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
         auth: { autoRefreshToken: false, persistSession: false },
         global: { headers: { Authorization: `Bearer ${token}` } },

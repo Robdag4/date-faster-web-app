@@ -28,7 +28,7 @@ export const createAdminClient = () => {
     console.warn('SUPABASE_SERVICE_ROLE_KEY not set — admin client will not work');
   }
   return createSupabaseClient(
-    supabaseUrl || 'https://placeholder.supabase.co',
+    process.env.NEXT_PUBLIC_SUPABASE_URL || supabaseUrl || 'https://fptwvsylvhzfunpspkej.supabase.co',
     serviceKey || 'placeholder-key',
     {
       auth: {
