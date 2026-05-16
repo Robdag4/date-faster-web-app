@@ -59,6 +59,24 @@ export default function OnboardingPage() {
     }
   }, [user, session, router]);
 
+  const [viewHeight, setViewHeight] = useState<string>('100dvh');
+
+  // Handle mobile keyboard resize via visualViewport
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      setViewHeight(`${vv.height}px`);
+    };
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    onResize();
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+    };
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -385,7 +403,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-cream-50" style={{ height: '100dvh' }}>
+    <div className="fixed inset-x-0 top-0 flex flex-col bg-cream-50" style={{ height: viewHeight }}>
       <div className="px-4 py-3 text-center bg-white border-b border-slate-200 shrink-0">
         <h2 className="font-bold text-lg text-slate-900">🤖 Date Faster Setup</h2>
       </div>
