@@ -27,6 +27,10 @@ export default function GuestMixerPage() {
       toast.error('Enter your name');
       return;
     }
+    if (!gender) {
+      toast.error('Select your gender');
+      return;
+    }
     setJoining(true);
     try {
       const res = await fetch('/api/events/mixer/join', {
@@ -118,7 +122,7 @@ export default function GuestMixerPage() {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              I am a... <span className="text-slate-400 font-normal">(for matching)</span>
+              I am a...
             </label>
             <div className="grid grid-cols-2 gap-3">
               {([
@@ -143,7 +147,7 @@ export default function GuestMixerPage() {
 
           <button
             onClick={join}
-            disabled={joining || !eventCode.trim() || !name.trim()}
+            disabled={joining || !eventCode.trim() || !name.trim() || !gender}
             className="btn-primary w-full disabled:opacity-50"
           >
             {joining ? 'Joining...' : 'Join Mixer'}
