@@ -299,6 +299,20 @@ export default function MixerPage() {
   };
 
   if (!eventId) {
+    // Single source of truth for joining is the public guest flow at /mixer
+    // (event code + name + gender). Redirect here so nobody lands on the old
+    // code-only screen.
+    if (typeof window !== 'undefined') {
+      window.location.replace('/mixer');
+    }
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-rose-500"></div>
+      </div>
+    );
+  }
+
+  if (false) {
     return (
       <div className="max-w-md mx-auto p-4 space-y-6">
         <div className="text-center">
