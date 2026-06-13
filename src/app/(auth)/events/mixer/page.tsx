@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, 
@@ -93,6 +93,10 @@ export default function MixerPage() {
   // Attendees tab
   const [attendees, setAttendees] = useState<Attendee[]>([]);
 
+  // Auto-select the tab only on first load; polling must not override the
+  // user's chosen tab afterwards.
+  const didInitTab = useRef(false);
+
   useEffect(() => {
     checkMixerStatus();
     // Poll every 5 seconds for status changes (host starting game, etc.)
@@ -115,14 +119,18 @@ export default function MixerPage() {
           
           setEventId(data.eventId);
           setEventStatus(data.eventStatus);
-          
+
           if (data.statements) {
             setStatements(data.statements);
-            setActiveTab('play');
-          } else {
-            setActiveTab('statements');
           }
-          
+
+          // Only auto-pick the tab on the FIRST load. After that, the 5s
+          // polling must not yank the user off a tab they chose (e.g. People).
+          if (!didInitTab.current) {
+            didInitTab.current = true;
+            setActiveTab(data.statements ? 'play' : 'statements');
+          }
+
           // Load attendees if event is active
           if (data.eventStatus === 'active') {
             loadAttendees();
