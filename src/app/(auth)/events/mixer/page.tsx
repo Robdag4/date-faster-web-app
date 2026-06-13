@@ -299,15 +299,24 @@ export default function MixerPage() {
   };
 
   if (!eventId) {
-    // Single source of truth for joining is the public guest flow at /mixer
-    // (event code + name + gender). Redirect here so nobody lands on the old
-    // code-only screen.
-    if (typeof window !== 'undefined') {
-      window.location.replace('/mixer');
-    }
+    // No active mixer for this user yet. Don't auto-redirect (that races the
+    // async status check and can loop). Show a clear path to the guest join
+    // screen instead.
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-rose-500"></div>
+      <div className="max-w-md mx-auto p-4 space-y-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">Singles Mixer</h1>
+          <p className="text-slate-600">Join a mixer event to start playing.</p>
+        </div>
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 text-center space-y-4">
+          <div className="animate-spin mx-auto rounded-full h-8 w-8 border-b-2 border-rose-500"></div>
+          <p className="text-slate-600 text-sm">
+            Checking for your mixer… if nothing loads, join with your event code.
+          </p>
+          <a href="/mixer" className="btn-primary inline-block">
+            Join with event code
+          </a>
+        </div>
       </div>
     );
   }
