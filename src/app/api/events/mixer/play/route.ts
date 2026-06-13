@@ -18,13 +18,17 @@ export async function POST(req: NextRequest) {
   if (!event) return notFound('Not checked into a mixer event');
   if (event.status !== 'active') return badRequest('Event not active yet');
 
+  // My gender — the guessing game is opposite-gender only (singles mixer).
+  const { data: me } = await admin.from('users').select('gender').eq('id', user.id).single();
+  const myGender = me?.gender || null;
+
   // Find already-guessed targets
   const { data: guessed } = await admin.from('mixer_guesses').select('target_id').eq('event_id', event.id).eq('guesser_id', user.id);
   const guessedIds = (guessed || []).map(g => g.target_id);
 
   // Find unguessed target with statements
   let query = admin.from('mixer_statements')
-    .select('*, users(first_name, age)')
+    .select('*, users(first_name, age, gender)')
     .eq('event_id', event.id)
     .neq('user_id', user.id);
 
@@ -33,7 +37,17 @@ export async function POST(req: NextRequest) {
     query = query.not('user_id', 'in', `(${guessedIds.join(',')})`);
   }
 
-  const { data: targets } = await query;
+  const { data: rawTargets } = await query;
+
+  // Opposite-gender only. If my gender is known, only show targets whose
+  // gender differs. (Targets with unknown gender are still shown so nobody
+  // gets stuck with an empty game.)
+  const targets = (rawTargets || []).filter((t: any) => {
+    if (!myGender) return true;
+    const g = t.users?.gender;
+    if (!g) return true;
+    return g !== myGender;
+  });
   if (!targets || targets.length === 0) return NextResponse.json({ done: true });
 
   // Random pick
