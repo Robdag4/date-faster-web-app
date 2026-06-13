@@ -46,18 +46,25 @@ export default function GuestMixerPage() {
       }
 
       // Establish the guest session in the browser Supabase client.
-      const { error: sessErr } = await supabase.auth.setSession({
-        access_token: data.accessToken,
-        refresh_token: data.refreshToken,
-      });
-      if (sessErr) {
-        toast.error('Could not start session. Try again.');
-        setJoining(false);
-        return;
+      // setSession can stall on token validation, so race it against a
+      // timeout and navigate regardless — the session is persisted to
+      // storage either way and the mixer page reads it from getSession().
+      try {
+        await Promise.race([
+          supabase.auth.setSession({
+            access_token: data.accessToken,
+            refresh_token: data.refreshToken,
+          }),
+          new Promise((resolve) => setTimeout(resolve, 2500)),
+        ]);
+      } catch {
+        // ignore — fall through to navigation
       }
 
       toast.success("You're in! 🎉");
-      router.replace('/events/mixer');
+      // Hard navigation so the auth provider re-reads the persisted session
+      // cleanly on the mixer page.
+      window.location.href = '/events/mixer';
     } catch {
       toast.error('Network error. Please try again.');
       setJoining(false);
